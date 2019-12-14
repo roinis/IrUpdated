@@ -14,57 +14,67 @@ public class Index {
     private Stemmer stemmer;
     private Posting posting;
     int counter = 0;
+    private HashMap<String,HashMap<String,Integer>> termFreqInDoc;
 
 
     public Index(boolean stem) throws IOException {
         this.stem=stem;
         dictionary=new HashMap<>();
-        readFile=new ReadFile("check");
+        readFile=new ReadFile("corpus");
         parser = new Parse(readFile.getStopWords());
         stemmer=new Stemmer();
         posting = new Posting();
         documents = new HashMap<>();
+        termFreqInDoc = new HashMap<>();
     }
 
     public void startIndex(){
         HashMap<String,String> docs=null;
-        HashMap<String,Integer> termFreqInDoc = null;
+
         List<Pair<String,String>> terms=null;
         Term newTerm = null;
         int numberOfDocs = 0;
-        while(readFile.readFewFiles()){
+        boolean continueIteration = true;
+        while(continueIteration){
+
+            if(!readFile.readFewFiles())
+                continueIteration = false;
             docs = readFile.getDocuments();
-            for(String key : docs.keySet()){
-                terms = parser.parse(docs.get(key));
+            if(docs.size() == 0)
+                break;
+            for(String docID : docs.keySet()){
+                terms = parser.parse(docs.get(docID));
                 if(stem){
                 }
-                documents.put(key,new Doc(key,terms.size()));
-                termFreqInDoc = getNumOfTermFreq(terms);
+                documents.put(docID,new Doc(docID,terms.size()));
+                getNumOfTermFreq(docID,terms);
                 for (Pair<String,String> termPosition: terms) {
-                    newTerm = saveTerm(termPosition,key);
+                    newTerm = saveTerm(termPosition,docID);
                 }
                 counter++;
-                posting.addDocToPosting(termFreqInDoc,key);
+
             }
+            posting.addDocToPosting(termFreqInDoc);
+            termFreqInDoc = new HashMap<>();
             posting.createNewFile();
             docs.clear();
         }
 
     }
 
-    private  HashMap<String,Integer> getNumOfTermFreq(List<Pair<String,String>> terms){
-        HashMap<String,Integer> termFreqInDoc = new HashMap<>();
+    private  void getNumOfTermFreq(String docID ,List<Pair<String,String>> terms){
+        HashMap<String,Integer> termsFreqMap = new HashMap<>();
         int freq = 0;
         for (Pair<String,String> termFreq:terms) {
-            if(termFreqInDoc.containsKey(termFreq.getKey().toLowerCase())){
-                freq = termFreqInDoc.get(termFreq.getKey().toLowerCase());
+            if(termsFreqMap.containsKey(termFreq.getKey().toLowerCase())){
+                freq = termsFreqMap.get(termFreq.getKey().toLowerCase());
                 freq++;
-                termFreqInDoc.put(termFreq.getKey().toLowerCase(),freq);
+                termsFreqMap.put(termFreq.getKey().toLowerCase(),freq);
             }else{
-                termFreqInDoc.put(termFreq.getKey().toLowerCase(),1);
+                termsFreqMap.put(termFreq.getKey().toLowerCase(),1);
             }
         }
-        return termFreqInDoc;
+        termFreqInDoc.put(docID,termsFreqMap);
 
 
     }

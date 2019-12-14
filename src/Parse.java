@@ -15,7 +15,7 @@ public class Parse {
 
 
     public Parse(HashSet<String> stopWords) {
-        terms = new ArrayList<Pair<String, String>>();
+
         currentWord = 0;
         createMonthsHash();
         this.stopWords = stopWords;
@@ -29,6 +29,8 @@ public class Parse {
     }
 
     public List<Pair<String, String>> parse(String document){
+        currentWord = 0;
+        terms = new ArrayList<Pair<String, String>>();
         currentDocument = document;
         document=document.trim();
         words = document.split("\\s+");
@@ -59,7 +61,6 @@ public class Parse {
 
 
     public void mainParser() {
-
         while(currentWord<words.length){
             if(generateNumber())
                 continue;
@@ -75,7 +76,7 @@ public class Parse {
     private boolean generateWord(){
         String word = words[currentWord].replaceAll("[[(,.#\")]]*","");
         String dateText="";
-        if(months.containsKey(words[currentWord].toLowerCase())&&words[currentWord+1].matches("\\d+") ){
+        if(currentWord + 1 < words.length && months.containsKey(words[currentWord].toLowerCase())&&words[currentWord+1].matches("\\d+") ){
             dateText = addDate(words[currentWord + 1], words[currentWord].toLowerCase());
             terms.add(new Pair<>(dateText,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
             currentWord = currentWord + 2;
@@ -116,6 +117,7 @@ public class Parse {
 
     private boolean generateNumber() {
         String firstWord = words[currentWord].replaceAll("[[(#)\"]]*","");
+        firstWord = firstWord.replaceAll("[.]+$","");
         words[currentWord]=firstWord;
         String nextWord = "";
         String previousWord = "";
@@ -135,6 +137,8 @@ public class Parse {
             else
                 return false;
         } else if (firstWord.matches("\\$\\d[\\d,.]*")) {
+            if(firstWord.length() - firstWord.replaceAll("\\.","").length() > 1)
+                return false;
             addPriceWithDollarSign(firstWord,nextWord);
         } else if (firstWord.matches("\\d[\\d,.]*bn")&& nextWord.toLowerCase().equals("dollars")) {
             addPriceWithBnSuffix(firstWord.toLowerCase());
@@ -244,19 +248,25 @@ public class Parse {
                     currentWord++;
                 }
             } else {
-                addPlainNumber(words[currentWord]);
+                if(words[currentWord].length() < 19){
+                    addPlainNumber(words[currentWord]);
                 currentWord++;
+                }else
+                    generateWord();
             }
         } else {
-            addPlainNumber(words[currentWord]);
-            currentWord++;
+            if(words[currentWord].length() < 19){
+                addPlainNumber(words[currentWord]);
+                currentWord++;
+            }else
+                generateWord();
         }
     }
 
     private void addPriceWithDollarSign(String word, String nextWord) {
         String priceTerm = "";
         float floatNumber;
-        int intNumber;
+        long longNumber;
         int currentCheck = currentWord;
         priceTerm = word.replaceAll("\\$*", "");
         if (nextWord.toLowerCase().equals("million")) {
@@ -275,9 +285,9 @@ public class Parse {
                 } else
                     priceTerm = priceTerm + " Dollars";
             } else {
-                intNumber = Integer.parseInt(priceTerm.replaceAll("\\,*", ""));
-                if (intNumber >= 1000000)
-                    priceTerm = String.valueOf(intNumber / 1000000) + " M Dollars";
+                longNumber = Long.parseLong(priceTerm.replaceAll("\\,*", ""));
+                if (longNumber >= 1000000)
+                    priceTerm = String.valueOf(longNumber / 1000000) + " M Dollars";
                 else
                     priceTerm = priceTerm + " Dollars";
             }
@@ -299,7 +309,7 @@ public class Parse {
             terms.add(new Pair<>(priceWithDollar,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
         }
         else{
-            int price = Integer.parseInt(number);
+            long price = Long.parseLong(number);
             String priceWithDollar = "";
             if (price <1000000) {
                 priceWithDollar = number + " Dollars";

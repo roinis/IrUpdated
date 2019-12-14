@@ -39,17 +39,21 @@ public class Posting {
         postingPaths.add(file);
     }
 
-    public void addDocToPosting(HashMap<String,Integer> allTermsInDoc,String docID){
+    public void addDocToPosting(HashMap<String,HashMap<String,Integer>> allTermsInDoc){
         if(firstTime==0){
             firstTime=1;
             createNewFile();
         }
         try {
-        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(postingPaths.get(postingPaths.size()-1).getPath(),true)));
-        for(String term:allTermsInDoc.keySet()) {
-            out.print(term +","+docID+","+allTermsInDoc.get(term) + " | ");
+        FileWriter out = new FileWriter(postingPaths.get(postingPaths.size()-1).getPath(),true);
+        for(String docID : allTermsInDoc.keySet()) {
+            for (String term : allTermsInDoc.get(docID).keySet()) {
+                out.write(term + "," + docID + "," + allTermsInDoc.get(docID).get(term) + " | ");
+                out.write("\n");
+
+            }
         }
-            out.println();
+        out.flush();
         out.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

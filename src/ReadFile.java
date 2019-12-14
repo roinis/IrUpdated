@@ -10,16 +10,20 @@ import java.util.Hashtable;
 public class ReadFile {
 
     private String path;
-    private HashSet<String> stopWords = new HashSet<>();
-    private HashMap<String,String> documents = new HashMap();
+    private HashSet<String> stopWords;
+    private HashMap<String,String> documents ;
     private static int currentFile;
+    private final int NUMBER_OF_FILES = 8;
     File[] directories;
 
     public ReadFile(String path) throws IOException {
         this.path = path;
         currentFile=0;
+        stopWords = new HashSet<>();
+        documents = new HashMap();
         readStopWords();
         getDocumentsPath();
+
     }
 
     public HashMap<String, String> getDocuments() {
@@ -46,7 +50,7 @@ public class ReadFile {
         }
     }
 
-    private void readDocument(String docPath) throws IOException {
+    private void readDocument(String docPath) {
         String openText = "<TEXT>";
         String closeText = "</TEXT>";
         String docId = "<DOCNO>";
@@ -55,7 +59,10 @@ public class ReadFile {
         String line;
         String key="";
         boolean textCheck = false;
-        BufferedReader br = new BufferedReader(new FileReader(docPath));
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(docPath));
+
         while((line = br.readLine()) != null){
             if(line.contains(docId)){
                 key = line.replaceAll("<.*?>","");
@@ -72,11 +79,18 @@ public class ReadFile {
             if(textCheck){
                 documentText= documentText + " " +line;
             }
+            }
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
     public boolean readFewFiles()  {
-        documents.clear();
-        for(int i=0;i<2;i++){
+        documents = new HashMap();
+        /**for(int i=0;i<8;i++){
             if(directories.length>(currentFile+i)){
                 try {
                     readDocument(directories[currentFile+i].getPath()+"\\"+directories[currentFile+i].getName());
@@ -89,6 +103,14 @@ public class ReadFile {
                 return false;
         }
         currentFile++;
+        return true;
+         **/
+        for (int i = currentFile; i < currentFile + NUMBER_OF_FILES; i++){
+            if(i >= directories.length)
+                return false;
+            readDocument(directories[i].getPath()+"\\"+directories[i].getName());
+        }
+        currentFile = currentFile + NUMBER_OF_FILES;
         return true;
     }
 
