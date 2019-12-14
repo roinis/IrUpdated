@@ -90,22 +90,7 @@ public class ReadFile {
 
     public boolean readFewFiles()  {
         documents = new HashMap();
-        /**for(int i=0;i<8;i++){
-            if(directories.length>(currentFile+i)){
-                try {
-                    readDocument(directories[currentFile+i].getPath()+"\\"+directories[currentFile+i].getName());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                currentFile=currentFile+i;
-            }
-            else
-                return false;
-        }
-        currentFile++;
-        return true;
-         **/
-        for (int i = currentFile; i < currentFile + NUMBER_OF_FILES; i++){
+         for (int i = currentFile; i < currentFile + NUMBER_OF_FILES; i++){
             if(i >= directories.length)
                 return false;
             readDocument(directories[i].getPath()+"\\"+directories[i].getName());

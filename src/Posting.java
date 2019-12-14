@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +41,7 @@ public class Posting {
         postingPaths.add(file);
     }
 
-    public void addDocToPosting(HashMap<String,HashMap<String,Integer>> allTermsInDoc){
+    public void addDocToPosting(HashMap<String,List<Pair<String,Integer>>> allTermsInDoc){
         if(firstTime==0){
             firstTime=1;
             createNewFile();
@@ -47,9 +49,9 @@ public class Posting {
         try {
         FileWriter out = new FileWriter(postingPaths.get(postingPaths.size()-1).getPath(),true);
         for(String docID : allTermsInDoc.keySet()) {
-            for (String term : allTermsInDoc.get(docID).keySet()) {
-                out.write(term + "," + docID + "," + allTermsInDoc.get(docID).get(term) + " | ");
-                out.write("\n");
+            for (Pair<String,Integer> termFreq : allTermsInDoc.get(docID)) {
+                out.write(termFreq.getKey() + "," + docID + "," + termFreq.getValue() + " | ");
+                //out.write("\n");
 
             }
         }

@@ -2,8 +2,7 @@ import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class Index {
     private HashMap<String,Term> dictionary;
@@ -20,7 +19,7 @@ public class Index {
     public Index(boolean stem) throws IOException {
         this.stem=stem;
         dictionary=new HashMap<>();
-        readFile=new ReadFile("corpus");
+        readFile=new ReadFile("ch1");
         parser = new Parse(readFile.getStopWords());
         stemmer=new Stemmer();
         posting = new Posting();
@@ -30,8 +29,8 @@ public class Index {
 
     public void startIndex(){
         HashMap<String,String> docs=null;
-
-        List<Pair<String,String>> terms=null;
+        HashMap<String,List<Pair<String,Integer>>> termsFreqSorted  = new HashMap<>();
+        List<String> terms=null;
         Term newTerm = null;
         int numberOfDocs = 0;
         boolean continueIteration = true;
@@ -48,13 +47,14 @@ public class Index {
                 }
                 documents.put(docID,new Doc(docID,terms.size()));
                 getNumOfTermFreq(docID,terms);
-                for (Pair<String,String> termPosition: terms) {
+                termsFreqSorted.put(docID,sortTerms(docID));
+                for (String termPosition: terms) {
                     newTerm = saveTerm(termPosition,docID);
                 }
                 counter++;
 
             }
-            posting.addDocToPosting(termFreqInDoc);
+            posting.addDocToPosting(termsFreqSorted);
             termFreqInDoc = new HashMap<>();
             posting.createNewFile();
             docs.clear();
@@ -62,16 +62,16 @@ public class Index {
 
     }
 
-    private  void getNumOfTermFreq(String docID ,List<Pair<String,String>> terms){
+    private  void getNumOfTermFreq(String docID ,List<String> terms){
         HashMap<String,Integer> termsFreqMap = new HashMap<>();
         int freq = 0;
-        for (Pair<String,String> termFreq:terms) {
-            if(termsFreqMap.containsKey(termFreq.getKey().toLowerCase())){
-                freq = termsFreqMap.get(termFreq.getKey().toLowerCase());
+        for (String termFreq:terms) {
+            if(termsFreqMap.containsKey(termFreq.toLowerCase())){
+                freq = termsFreqMap.get(termFreq.toLowerCase());
                 freq++;
-                termsFreqMap.put(termFreq.getKey().toLowerCase(),freq);
+                termsFreqMap.put(termFreq.toLowerCase(),freq);
             }else{
-                termsFreqMap.put(termFreq.getKey().toLowerCase(),1);
+                termsFreqMap.put(termFreq.toLowerCase(),1);
             }
         }
         termFreqInDoc.put(docID,termsFreqMap);
@@ -83,82 +83,31 @@ public class Index {
 
 
 
-    private Term saveTerm(Pair<String,String>termPosition,String docID){
-        String termLowerCase = termPosition.getKey().toLowerCase();
+    private Term saveTerm(String termPosition,String docID){
+        String termLowerCase = termPosition.toLowerCase();
         Term newTerm = null;
         if(dictionary.containsKey(termLowerCase)){
             newTerm = dictionary.get(termLowerCase);
-           if(!termPosition.getKey().equals(newTerm.getTerm())){
+           if(!termPosition.equals(newTerm.getTerm())){
                newTerm.setTerm(termLowerCase);
            }
         }else{
-            newTerm = new Term(termPosition.getKey());
+            newTerm = new Term(termPosition);
             dictionary.put(termLowerCase,newTerm);
         }
         newTerm.setIdf(newTerm.getIdf() + 1);
         return newTerm;
     }
 
-
-
-
-
-
-
-
-
-
-/**
-    private void addWordToHash(String termName,Document document){
-        if (!terms.containsKey(termName.toLowerCase())){
-            if(Character.isUpperCase(termName.charAt(0))){
-                Term newTerm = new Term(termName.toUpperCase());
-                newTerm.addDocument(document);
-                newTerm.incrementCounter();
-                terms.put(termName.toLowerCase(),newTerm);
-            }
-            else{
-                Term newTerm = new Term(termName);
-                newTerm.addDocument(document);
-                newTerm.incrementCounter();
-                terms.put(termName.toLowerCase(),newTerm);
-            }
-        }else{
-            Term tempoTerm = terms.remove(termName.toLowerCase());
-            if(Character.isLowerCase(tempoTerm.getTerm().charAt(0))){
-                tempoTerm.incrementCounter();
-                tempoTerm.addDocument(document);
-                terms.put(termName.toLowerCase(),tempoTerm);
-            }
-            else{
-                if(Character.isUpperCase(termName.charAt(0))){
-                    tempoTerm.addDocument(document);
-                    tempoTerm.incrementCounter();
-                    terms.put(termName.toLowerCase(),tempoTerm);
-                }
-                else{
-                    tempoTerm.setTerm(termName.toLowerCase());
-                    tempoTerm.incrementCounter();
-                    tempoTerm.addDocument(document);
-                    terms.put(termName.toLowerCase(),tempoTerm);
-                }
-            }
+    private List<Pair<String,Integer>> sortTerms(String docID){
+        List<Pair<String,Integer>> sortedTermsFreq = new ArrayList<>();
+        List<String> terms = new ArrayList<>(termFreqInDoc.get(docID).keySet());
+        Collections.sort(terms);
+        for (String term: terms) {
+            sortedTermsFreq.add(new Pair<String, Integer>(term,termFreqInDoc.get(docID).get(term)));
         }
+        return sortedTermsFreq;
+
     }
 
-    private void addNumericTermToHash(String termName, Document document) {
-        if (!terms.containsKey(termName)) {
-            Term newTerm = new Term(termName);
-            newTerm.addDocument(document);
-            newTerm.incrementCounter();
-            terms.put(termName, newTerm);
-        } else {
-            Term tempoTerm = terms.remove(termName);
-            tempoTerm.incrementCounter();
-            tempoTerm.addDocument(document);
-            terms.put(termName, tempoTerm);
-        }
-    }
-
-**/
 }

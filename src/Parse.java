@@ -4,7 +4,7 @@ import java.util.*;
 
 
 public class Parse {
-    private List<Pair<String, String>> terms;
+    private List<String> terms;
     private int currentWord;
     private String currentDocument;
     private Hashtable<String, String> months;
@@ -28,9 +28,9 @@ public class Parse {
         System.out.println(tokens);
     }
 
-    public List<Pair<String, String>> parse(String document){
+    public List<String> parse(String document){
         currentWord = 0;
-        terms = new ArrayList<Pair<String, String>>();
+        terms = new ArrayList<String>();
         currentDocument = document;
         document=document.trim();
         words = document.split("\\s+");
@@ -78,14 +78,14 @@ public class Parse {
         String dateText="";
         if(currentWord + 1 < words.length && months.containsKey(words[currentWord].toLowerCase())&&words[currentWord+1].matches("\\d+") ){
             dateText = addDate(words[currentWord + 1], words[currentWord].toLowerCase());
-            terms.add(new Pair<>(dateText,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(dateText);
             currentWord = currentWord + 2;
         }
         else if(stopWords.contains(word.toLowerCase())){
             currentWord++;
             return false;
         }else {
-            terms.add(new Pair<>(word,String.valueOf(currentWord)));
+            terms.add(word);
             currentWord++;
             return true;
         }
@@ -107,7 +107,7 @@ public class Parse {
                     words[currentWord + 1].matches("\\d+") &&
                     words[currentWord + 2].toLowerCase().equals("and") &&
                     words[currentWord + 3].matches("\\d+")){
-                terms.add(new Pair<>(words[currentWord + 1] + "-" + words[currentWord + 3],String.valueOf(currentWord)+"-"+String.valueOf(currentWord+3)));
+                terms.add(words[currentWord + 1] + "-" + words[currentWord + 3]);
                 currentWord+=4;
                 return true;
             }
@@ -129,7 +129,7 @@ public class Parse {
 
         if (firstWord.matches("\\d[\\d,.]*\\%")) {
             String percentWord = addPercentNumber(firstWord);
-            terms.add(new Pair<>(percentWord,String.valueOf(currentWord)));
+            terms.add(percentWord);
             currentWord++;
         } else if (firstWord.matches("\\d[\\d,.]*")) {
             if(!ifContainsMoreDotsThanOne(firstWord))
@@ -157,7 +157,7 @@ public class Parse {
         String priceTerm=word.replaceAll("[,m]","");
         floatNumber = Float.parseFloat(priceTerm);
         priceTerm = priceTerm + " M Dollars";
-        terms.add(new Pair<>(priceTerm,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+        terms.add(priceTerm);
         currentWord = currentWord+2;
     }
 
@@ -175,7 +175,7 @@ public class Parse {
 
         }
         priceTerm = priceTerm + " M Dollars";
-        terms.add(new Pair<>(priceTerm,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+        terms.add(priceTerm);
         currentWord = currentWord+2;
     }
 
@@ -197,13 +197,13 @@ public class Parse {
         else{
             priceTerm = priceTerm+ "000 M Dollars";
         }
-        terms.add(new Pair<>(priceTerm,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+3)));
+        terms.add(priceTerm);
     }
 
     private void numberIsTypeOne(String firstWord, String nextWord, String previousWord) {
         if (nextWord.toLowerCase().equals("percent") || nextWord.toLowerCase().equals("percentage")) {
             String percentWord = addPercentNumber(words[currentWord]);
-            terms.add(new Pair<>(percentWord,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(percentWord);
             currentWord = currentWord + 2;
         }
         else if (nextWord.toLowerCase().equals("thousand") || nextWord.toLowerCase().equals("million") || nextWord.toLowerCase().equals("billion")) {
@@ -228,7 +228,7 @@ public class Parse {
                     currentWord = currentWord + 3;
                 } else {
                     String numberWithFraction = words[currentWord] + " " + nextWord;
-                    terms.add(new Pair<>(numberWithFraction,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+                    terms.add(numberWithFraction);
                     currentWord=currentWord+2;
                 }
             }
@@ -240,11 +240,11 @@ public class Parse {
             if (months.containsKey(nextWord.toLowerCase()) ) {
                 if (months.containsKey(nextWord.toLowerCase())) {
                     dateText=addDate(firstWord, nextWord.toLowerCase());
-                    terms.add(new Pair<>(dateText,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+                    terms.add(dateText);
                     currentWord = currentWord + 2;
                 } else {
                     dateText=addDate(firstWord, previousWord.toLowerCase());
-                    terms.add(new Pair<>(dateText,String.valueOf(currentWord)));
+                    terms.add(dateText);
                     currentWord++;
                 }
             } else {
@@ -293,7 +293,7 @@ public class Parse {
             }
             currentWord++;
         }
-        terms.add(new Pair<>(priceTerm,String.valueOf(currentCheck)+"-"+String.valueOf(currentWord-1)));
+        terms.add(priceTerm);
     }
 
     private void addPriceWithDollar(String number) {
@@ -306,7 +306,7 @@ public class Parse {
             } else {
                 priceWithDollar = String.valueOf(price/1000000) + " M Dollars";
             }
-            terms.add(new Pair<>(priceWithDollar,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(priceWithDollar);
         }
         else{
             long price = Long.parseLong(number);
@@ -316,14 +316,14 @@ public class Parse {
             } else {
                 priceWithDollar = String.valueOf(price/1000000) + " M Dollars";
             }
-            terms.add(new Pair<>(priceWithDollar,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(priceWithDollar);
         }
     }
 
 
     private void addDollarWithFraction(String number, String fraction) {
         String fractionTerm = number + " " + fraction + " Dollars";
-        terms.add(new Pair<>(fractionTerm,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+2)));
+        terms.add(fractionTerm);
     }
 
 
@@ -345,13 +345,13 @@ public class Parse {
         }
         if (nextWord.toLowerCase().equals("thousand")) {
             termName = termName + "K";
-            terms.add(new Pair<>(termName,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(termName);
         } else if (nextWord.toLowerCase().equals("million")) {
             termName = termName + "M";
-            terms.add(new Pair<>(termName,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(termName);
         } else if (nextWord.toLowerCase().equals("billion")) {
             termName = termName + "B";
-            terms.add(new Pair<>(termName,String.valueOf(currentWord)+"-"+String.valueOf(currentWord+1)));
+            terms.add(termName);
         }
     }
 
@@ -376,7 +376,7 @@ public class Parse {
                 numberTerm = String.valueOf((float)nativeNum / 1000000000) + "B";
 
         }
-        terms.add(new Pair<>(numberTerm,String.valueOf(currentWord)));
+        terms.add(numberTerm);
     }
 
 
