@@ -13,7 +13,7 @@ public class ReadFile {
     private HashSet<String> stopWords;
     private HashMap<String,String> documents ;
     private static int currentFile;
-    private final int NUMBER_OF_FILES = 8;
+    private final int NUMBER_OF_FILES = 1;
     File[] directories;
 
     public ReadFile(String path) throws IOException {

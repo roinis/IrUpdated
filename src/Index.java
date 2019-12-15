@@ -47,18 +47,17 @@ public class Index {
                 }
                 documents.put(docID,new Doc(docID,terms.size()));
                 getNumOfTermFreq(docID,terms);
-                termsFreqSorted.put(docID,sortTerms(docID));
                 for (String termPosition: terms) {
                     newTerm = saveTerm(termPosition,docID);
                 }
-                counter++;
 
             }
-            posting.addDocToPosting(termsFreqSorted);
+            posting.addDocToPosting(posting.sortPostingElements(termFreqInDoc));
             termFreqInDoc = new HashMap<>();
             posting.createNewFile();
             docs.clear();
         }
+        posting.mergePosting("Posting1.txt","Posting2.txt");
 
     }
 
@@ -75,8 +74,6 @@ public class Index {
             }
         }
         termFreqInDoc.put(docID,termsFreqMap);
-
-
     }
 
 
@@ -99,15 +96,5 @@ public class Index {
         return newTerm;
     }
 
-    private List<Pair<String,Integer>> sortTerms(String docID){
-        List<Pair<String,Integer>> sortedTermsFreq = new ArrayList<>();
-        List<String> terms = new ArrayList<>(termFreqInDoc.get(docID).keySet());
-        Collections.sort(terms);
-        for (String term: terms) {
-            sortedTermsFreq.add(new Pair<String, Integer>(term,termFreqInDoc.get(docID).get(term)));
-        }
-        return sortedTermsFreq;
-
-    }
 
 }
