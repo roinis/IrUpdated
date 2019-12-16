@@ -15,7 +15,6 @@ public class Parse {
 
 
     public Parse(HashSet<String> stopWords) {
-
         currentWord = 0;
         createMonthsHash();
         this.stopWords = stopWords;
@@ -74,14 +73,39 @@ public class Parse {
     }
 
     private boolean generateWord(){
-        String word = words[currentWord].replaceAll("[[(,.#\")]]*","");
+        String word = words[currentWord].replaceAll("[\\[\\(&;'~`+|!*,.#\"\\)\\]]*","");
+        word = word.replaceAll("-{2,}","");
+        if(word.matches("-\\w*"))
+            word = word.replaceAll("-","");
+        if(word.isEmpty() || word.length()==1) {
+            currentWord++;
+            return false;
+        }
+        String currentWordToLower = word.toLowerCase();
         String dateText="";
-        if(currentWord + 1 < words.length && months.containsKey(words[currentWord].toLowerCase())&&words[currentWord+1].matches("\\d+") ){
-            dateText = addDate(words[currentWord + 1], words[currentWord].toLowerCase());
+        if(currentWord + 1 < words.length && months.containsKey(currentWordToLower)&&words[currentWord+1].matches("\\d+") ){
+            dateText = addDate(words[currentWord + 1], currentWordToLower);
             terms.add(dateText);
             currentWord = currentWord + 2;
         }
-        else if(stopWords.contains(word.toLowerCase())){
+        else if(word.matches("\\w+[/]\\w+")) {
+            String[] splittedOrWord = word.split("/");
+            terms.add(splittedOrWord[0]+" Or " + splittedOrWord[1]);
+            currentWord++;
+        }
+        else if(word.matches("\\d{1,2}:\\d{2}")){
+            String[] splittedHourWord = word.split(":");
+            if(Integer.valueOf(splittedHourWord[0])>11 && Integer.valueOf(splittedHourWord[1])>=0){
+                if(Integer.valueOf(splittedHourWord[0])==12)
+                    terms.add(String.valueOf(Integer.valueOf(splittedHourWord[0]))+ "PM");
+                else
+                    terms.add(String.valueOf(Integer.valueOf(splittedHourWord[0])-12) +" PM");
+            }
+            else
+                terms.add(splittedHourWord[0]+ " AM");
+            currentWord++;
+        }
+        else if(stopWords.contains(currentWordToLower)){
             currentWord++;
             return false;
         }else {
@@ -121,12 +145,12 @@ public class Parse {
         words[currentWord]=firstWord;
         String nextWord = "";
         String previousWord = "";
+        firstWord = firstWord.toLowerCase();
         if (currentWord > 0) {
             previousWord = words[currentWord - 1].toLowerCase();
         }
         if (currentWord +1< words.length)
             nextWord = words[currentWord + 1].toLowerCase();
-
         if (firstWord.matches("\\d[\\d,.]*\\%")) {
             String percentWord = addPercentNumber(firstWord);
             terms.add(percentWord);
@@ -140,10 +164,10 @@ public class Parse {
             if(firstWord.length() - firstWord.replaceAll("\\.","").length() > 1)
                 return false;
             addPriceWithDollarSign(firstWord,nextWord);
-        } else if (firstWord.matches("\\d[\\d,.]*bn")&& nextWord.toLowerCase().equals("dollars")) {
-            addPriceWithBnSuffix(firstWord.toLowerCase());
+        } else if (firstWord.matches("\\d[\\d,.]*bn")&& nextWord.equals("dollars")) {
+            addPriceWithBnSuffix(firstWord);
         }
-        else if(firstWord.matches("\\d[\\d,.]*m")&& nextWord.toLowerCase().equals("dollars"))
+        else if(firstWord.matches("\\d[\\d,.]*m")&& nextWord.equals("dollars"))
             addPriceWithMSuffix(firstWord);
         else{
             return false;
@@ -201,12 +225,12 @@ public class Parse {
     }
 
     private void numberIsTypeOne(String firstWord, String nextWord, String previousWord) {
-        if (nextWord.toLowerCase().equals("percent") || nextWord.toLowerCase().equals("percentage")) {
+        if (nextWord.equals("percent") || nextWord.equals("percentage")) {
             String percentWord = addPercentNumber(words[currentWord]);
             terms.add(percentWord);
             currentWord = currentWord + 2;
         }
-        else if (nextWord.toLowerCase().equals("thousand") || nextWord.toLowerCase().equals("million") || nextWord.toLowerCase().equals("billion")) {
+        else if (nextWord.equals("thousand") || nextWord.equals("million") || nextWord.equals("billion")) {
             String checkIfDollar ="";
             String checkIfUs = "";
             if(currentWord+3<words.length){
@@ -214,17 +238,17 @@ public class Parse {
                 checkIfUs = words[currentWord+2].toLowerCase();
             }
             if(checkIfUs.equals("u.s.") && checkIfDollar.equals("dollars")){
-                addPriceWithUSandDollar(words[currentWord].toLowerCase(),words[currentWord+1].toLowerCase());
+                addPriceWithUSandDollar(firstWord,nextWord);
                 currentWord = currentWord+4;
             }
             else{
-                addLargeNumbers(words[currentWord], words[currentWord + 1]);
+                addLargeNumbers(firstWord, nextWord);
                 currentWord = currentWord + 2;
             }
         } else if (nextWord.matches("\\d+/\\d")) {
             if (currentWord + 2 < words.length) {
                 if (words[currentWord + 2].toLowerCase().equals("dollars")) {
-                    addDollarWithFraction(words[currentWord], words[currentWord + 1]);
+                    addDollarWithFraction(firstWord, nextWord);
                     currentWord = currentWord + 3;
                 } else {
                     String numberWithFraction = words[currentWord] + " " + nextWord;
@@ -232,18 +256,18 @@ public class Parse {
                     currentWord=currentWord+2;
                 }
             }
-        } else if (nextWord.toLowerCase().matches("dollars")) {
+        } else if (nextWord.matches("dollars")) {
             addPriceWithDollar(words[currentWord]);
             currentWord = currentWord + 2;
         } else if (firstWord.matches("\\d+")) {
             String dateText = "";
-            if (months.containsKey(nextWord.toLowerCase()) ) {
-                if (months.containsKey(nextWord.toLowerCase())) {
-                    dateText=addDate(firstWord, nextWord.toLowerCase());
+            if (months.containsKey(nextWord) ) {
+                if (months.containsKey(nextWord)) {
+                    dateText=addDate(firstWord, nextWord);
                     terms.add(dateText);
                     currentWord = currentWord + 2;
                 } else {
-                    dateText=addDate(firstWord, previousWord.toLowerCase());
+                    dateText=addDate(firstWord, previousWord);
                     terms.add(dateText);
                     currentWord++;
                 }
@@ -269,11 +293,11 @@ public class Parse {
         long longNumber;
         int currentCheck = currentWord;
         priceTerm = word.replaceAll("\\$*", "");
-        if (nextWord.toLowerCase().equals("million")) {
+        if (nextWord.equals("million")) {
             priceTerm = priceTerm.replaceAll("\\,*", "");
             priceTerm = priceTerm + " M Dollars";
             currentWord = currentWord+2;
-        } else if (nextWord.toLowerCase().equals("billion")) {
+        } else if (nextWord.equals("billion")) {
             priceTerm = priceTerm.replaceAll("\\,*", "");
             priceTerm = priceTerm + "000" + " M Dollars";
             currentWord = currentWord+2;
@@ -343,13 +367,13 @@ public class Parse {
         } else {
             termName = word;
         }
-        if (nextWord.toLowerCase().equals("thousand")) {
+        if (nextWord.equals("thousand")) {
             termName = termName + "K";
             terms.add(termName);
-        } else if (nextWord.toLowerCase().equals("million")) {
+        } else if (nextWord.equals("million")) {
             termName = termName + "M";
             terms.add(termName);
-        } else if (nextWord.toLowerCase().equals("billion")) {
+        } else if (nextWord.equals("billion")) {
             termName = termName + "B";
             terms.add(termName);
         }

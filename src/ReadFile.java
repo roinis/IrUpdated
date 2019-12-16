@@ -13,7 +13,7 @@ public class ReadFile {
     private HashSet<String> stopWords;
     private HashMap<String,String> documents ;
     private static int currentFile;
-    private final int NUMBER_OF_FILES = 1;
+    private final int NUMBER_OF_FILES = 8;
     File[] directories;
 
     public ReadFile(String path) throws IOException {
@@ -64,6 +64,10 @@ public class ReadFile {
             br = new BufferedReader(new FileReader(docPath));
 
         while((line = br.readLine()) != null){
+            if(line.contains("</f>")||line.contains("</F>"))
+                continue;
+            if(line.contains("<h")||line.contains("<H")||line.contains("h>")||line.contains("H>"))
+                line = line.replaceAll("<\\/*(h|H)\\d+>","");
             if(line.contains(docId)){
                 key = line.replaceAll("<.*?>","");
             }

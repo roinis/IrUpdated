@@ -1,6 +1,5 @@
 import javafx.util.Pair;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -8,7 +7,7 @@ public class Index {
     private HashMap<String,Term> dictionary;
     private HashMap<String,Doc> documents;
     private boolean stem;
-    private Parse parser;
+    private Parser parser;
     private ReadFile readFile;
     private Stemmer stemmer;
     private Posting posting;
@@ -20,7 +19,7 @@ public class Index {
         this.stem=stem;
         dictionary=new HashMap<>();
         readFile=new ReadFile("ch1");
-        parser = new Parse(readFile.getStopWords());
+        parser = new Parser(readFile.getStopWords());
         stemmer=new Stemmer();
         posting = new Posting();
         documents = new HashMap<>();
@@ -35,29 +34,29 @@ public class Index {
         int numberOfDocs = 0;
         boolean continueIteration = true;
         while(continueIteration){
-
             if(!readFile.readFewFiles())
                 continueIteration = false;
             docs = readFile.getDocuments();
             if(docs.size() == 0)
                 break;
+            posting.createNewFile("");
             for(String docID : docs.keySet()){
                 terms = parser.parse(docs.get(docID));
                 if(stem){
                 }
                 documents.put(docID,new Doc(docID,terms.size()));
                 getNumOfTermFreq(docID,terms);
-                for (String termPosition: terms) {
-                    newTerm = saveTerm(termPosition,docID);
+                for (String term: terms) {
+                    newTerm = saveTerm(term,docID);
                 }
-
             }
             posting.addDocToPosting(posting.sortPostingElements(termFreqInDoc));
             termFreqInDoc = new HashMap<>();
-            posting.createNewFile();
             docs.clear();
         }
-        posting.mergePosting("Posting1.txt","Posting2.txt");
+        System.out.println("finish parse");
+        //posting.alphaBetMergeSort();
+        setDictionaryPostingLocation();
 
     }
 
@@ -77,19 +76,31 @@ public class Index {
     }
 
 
+    private void setDictionaryPostingLocation(){
+        List<List<String>> postingDictionary = posting.getPostingDictionary();
+        for(List<String> list:postingDictionary){
+            for (int i = 0;i<list.size();i++){
+                try {
+                    dictionary.get(list.get(i).split(",")[0]).setLine(i + 1);
+                }
+                catch (Exception e) {
+                    System.out.println();
+                }
+            }
+        }
+    }
 
 
-
-    private Term saveTerm(String termPosition,String docID){
-        String termLowerCase = termPosition.toLowerCase();
+    private Term saveTerm(String term,String docID){
+        String termLowerCase = term.toLowerCase();
         Term newTerm = null;
         if(dictionary.containsKey(termLowerCase)){
             newTerm = dictionary.get(termLowerCase);
-           if(!termPosition.equals(newTerm.getTerm())){
+           if(!term.equals(newTerm.getTerm())){
                newTerm.setTerm(termLowerCase);
            }
         }else{
-            newTerm = new Term(termPosition);
+            newTerm = new Term(term);
             dictionary.put(termLowerCase,newTerm);
         }
         newTerm.setIdf(newTerm.getIdf() + 1);
