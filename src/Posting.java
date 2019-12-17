@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 
 import static java.lang.System.out;
+import static java.lang.System.setOut;
 
 public class Posting {
     private HashMap<String,String> postingFilePaths;
@@ -15,7 +16,10 @@ public class Posting {
     private int firstTime;
     private List<String> alphaBet;
     private List<List<String>> postingDictionary;
-
+    private final int K1 = 20000;
+    private final int K2 = 60000;
+    private PriorityQueue<String> minHeap;
+    private int [] postingLastLine;
 
     public Posting(){
         postingFilePaths=new HashMap<>();
@@ -25,8 +29,12 @@ public class Posting {
         postingPaths = new ArrayList<>();
         firstTime=0;
         alphaBet = new ArrayList<>(Arrays.asList("abc","def","ghi","jkl","nop",
-                                                "qrs","tyu","vwx","yz"));
+                "qrs","tyu","vwx","yz"));
         postingDictionary = new ArrayList<>();
+        minHeap = new PriorityQueue<>();
+
+
+
     }
 
 
@@ -50,9 +58,14 @@ public class Posting {
     public void addDocToPosting(List<String> allTermsInDoc){
         try {
             FileWriter out = new FileWriter(postingPaths.get(postingPaths.size() - 1).getPath(), true);
-                for (String postingTerm : allTermsInDoc) {
+            int counter = 0;
+            int sizeOfList = allTermsInDoc.size();
+            for (String postingTerm : allTermsInDoc) {
+                if(counter < sizeOfList -1 )
                     out.write(postingTerm + "\n");
-                }
+                else
+                    out.write(postingTerm );
+            }
             out.flush();
             out.close();
         }
@@ -74,83 +87,14 @@ public class Posting {
         return postingTerms;
     }
 
-    public void alphaBetMergeSort(){
-        for(String chars: alphaBet){
-            mergePosting(chars);
-        }
-    }
 
-
-
-    public void mergePosting(String chars){
-        String postingLine = "";
-        List<String> firstPostingList = new ArrayList<>();
-        List<String> secondPostingList = new ArrayList<>();
-        List<String> combinedTerms;
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(postingPaths.get(0).getAbsolutePath()));
-            while ((postingLine = reader.readLine()) != null) {
-                if(alphaBetContains(postingLine)==0)
-                    firstPostingList.add(postingLine);
-            }
-            for (int i = 1; i < postingPaths.size(); i++) {
-                reader = new BufferedReader(new FileReader(postingPaths.get(i).getAbsolutePath()));
-                while ((postingLine = reader.readLine()) != null) {
-                    if(postingLine.charAt(0) >= chars.charAt(0) && postingLine.charAt(0) <= chars.charAt(chars.length() - 1))
-                        secondPostingList.add(postingLine);
-                }
-                firstPostingList = twoWayMergeSort(firstPostingList,secondPostingList);
-                secondPostingList = new ArrayList<>();
-            }
-            createNewFile(chars);
-            combinedTerms = combineTerms(firstPostingList);
-            postingDictionary.add(combinedTerms);
-            addDocToPosting(combinedTerms);
-
-        }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    private int alphaBetContains(String line){
-        if(line.charAt(0) >= alphaBet.get(0).charAt(0) && line.charAt(0) <= alphaBet.get(0).charAt(alphaBet.get(0).length() - 1)){
-           return 0;
-        }
-        if(line.charAt(0) >= alphaBet.get(1).charAt(0) && line.charAt(0) <= alphaBet.get(1).charAt(alphaBet.get(1).length() - 1)){
-            return 1;
-        }
-        if(line.charAt(0) >= alphaBet.get(2).charAt(0) && line.charAt(0) <= alphaBet.get(2).charAt(alphaBet.get(2).length() - 1)){
-            return 2;
-        }
-        if(line.charAt(0) >= alphaBet.get(3).charAt(0) && line.charAt(0) <= alphaBet.get(3).charAt(alphaBet.get(3).length() - 1)){
-            return 3;
-        }
-        if(line.charAt(0) >= alphaBet.get(4).charAt(0) && line.charAt(0) <= alphaBet.get(4).charAt(alphaBet.get(4).length() - 1)){
-            return 4;
-        }
-        if(line.charAt(0) >= alphaBet.get(5).charAt(0) && line.charAt(0) <= alphaBet.get(5).charAt(alphaBet.get(5).length() - 1)){
-            return 5;
-        }if(line.charAt(0) >= alphaBet.get(6).charAt(0) && line.charAt(0) <= alphaBet.get(6).charAt(alphaBet.get(6).length() - 1)){
-            return 6;
-        }if(line.charAt(0) >= alphaBet.get(7).charAt(0) && line.charAt(0) <= alphaBet.get(7).charAt(alphaBet.get(7).length() - 1)){
-            return 7;
-        }
-        if(line.charAt(0) >= alphaBet.get(8).charAt(0) && line.charAt(0) <= alphaBet.get(8).charAt(alphaBet.get(8).length() - 1)){
-            return 8;
-        }
-        return 0;
-    }
 
     public List<List<String>> getPostingDictionary(){
         return postingDictionary;
     }
 
     private List<String> twoWayMergeSort(List<String> firstPostingList,List<String>secondPostingList){
+
         int firstPostingPointer = 0;
         int secondPostingPointer = 0;
         List<String> mergedPosting = new ArrayList<>();
@@ -167,7 +111,7 @@ public class Posting {
             }
         }
         for (int i = firstPostingPointer; i < firstPostingList.size(); i++) {
-                mergedPosting.add(firstPostingList.get(i));
+            mergedPosting.add(firstPostingList.get(i));
         }
         for (int i = secondPostingPointer; i < secondPostingList.size(); i++) {
             mergedPosting.add(secondPostingList.get(i));
@@ -202,5 +146,97 @@ public class Posting {
         return combineTerms;
     }
 
+    private List<String> readKLinesFromDoc(String DocPath,int startIndex) {
+        List<String> kLines = new ArrayList<>();
+        BufferedReader reader = null;
+        String postingLine = "";
+        int linesCounter = 0;
+
+        try {
+            reader = new BufferedReader(new FileReader(DocPath));
+            while ((postingLine = reader.readLine()) != null && kLines.size() < K1) {
+                if (linesCounter >= startIndex) {
+                    kLines.add(postingLine);
+                }
+                linesCounter++;
+            }
+            return kLines;
+
+        } catch (Exception e) {
+            System.out.println(e);
+            return kLines;
+        }
+    }
+
+
+
+    private void KWayMerge(List<List<String>> postingFilesKlines){
+        List<String> termsToSave = new ArrayList<>();
+        int numberOfFiles = postingPaths.size();
+        int [] lineIndex = new int[numberOfFiles];
+        int [] finishPostingArr = new int[numberOfFiles];
+        String minWord;
+        int fileWithMinWord = 0;
+        boolean firstTime = true;
+        int finishedPosting  = 0;
+        for(List<String> files : postingFilesKlines){
+            minHeap.add(files.get(0));
+        }
+        while(finishedPosting < numberOfFiles){
+            minWord = minHeap.poll();
+            termsToSave.add(minWord);
+            for(int i = 0; fileWithMinWord < lineIndex.length; i++){
+                fileWithMinWord = i;
+                if(lineIndex[fileWithMinWord] >= postingFilesKlines.get(fileWithMinWord).size()){
+                    if(finishPostingArr[fileWithMinWord] == 0) {
+                        finishPostingArr[fileWithMinWord] = 1;
+                        finishedPosting++;
+                    }
+                    if( i == lineIndex.length - 1)
+                        break;
+                    else
+                        continue;
+                }
+                if(postingFilesKlines.get(fileWithMinWord).get(lineIndex[fileWithMinWord]).equals(minWord)){
+                    lineIndex[fileWithMinWord]++;
+                    if(lineIndex[fileWithMinWord] >= K1) {
+                        postingFilesKlines.set(fileWithMinWord,readKLinesFromDoc(postingPaths.get(fileWithMinWord).getAbsolutePath(),
+                                postingLastLine[fileWithMinWord]));
+                        postingLastLine[fileWithMinWord]+=K1;
+                        lineIndex[fileWithMinWord] = 0;
+                    }
+                    break;
+                }
+            }
+
+            if (postingFilesKlines.get(fileWithMinWord).size() > lineIndex[fileWithMinWord])
+                minHeap.add(postingFilesKlines.get(fileWithMinWord).get(lineIndex[fileWithMinWord]));
+            if(termsToSave.size() > K2){
+                if(firstTime) {
+                    firstTime = false;
+                    createNewFile("combinedList");
+                }
+                addDocToPosting(termsToSave);
+                termsToSave = new ArrayList<>();
+            }
+        }
+        if(firstTime) {
+            firstTime = false;
+            createNewFile("combinedList");
+        }
+        addDocToPosting(termsToSave);
+
+    }
+
+    public void mergePostingFiles(){
+        List<List<String>> files = new ArrayList<>();
+        postingLastLine = new int[postingPaths.size()];
+        for(File f: postingPaths){
+            files.add(readKLinesFromDoc(f.getAbsolutePath(),0));
+        }
+        KWayMerge(files);
+
+    }
 
 }
+
