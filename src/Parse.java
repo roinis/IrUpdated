@@ -140,8 +140,17 @@ public class Parse {
     }
 
     private boolean generateNumber() {
-        String firstWord = words[currentWord].replaceAll("[[(#)\"]]*","");
+        String firstWord = words[currentWord].replaceAll("[[?(#)*;\"]]*","");
         firstWord = firstWord.replaceAll("[.]+$","");
+        if(firstWord.charAt(0)=='[')
+            firstWord=firstWord.substring(1);
+        int firstWordLenght = firstWord.length();
+        if(firstWord.length()>1 && (firstWord.charAt(firstWordLenght-1)==','||firstWord.charAt(firstWordLenght-1)=='.'||firstWord.charAt(firstWordLenght-1)=='-'||firstWord.charAt(firstWordLenght-1)=='-'))
+            firstWord=firstWord.substring(0,firstWordLenght-1);
+        if(firstWord.length()==0) {
+            currentWord++;
+            return true;
+        }
         words[currentWord]=firstWord;
         String nextWord = "";
         String previousWord = "";

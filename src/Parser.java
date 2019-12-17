@@ -9,14 +9,17 @@ public class Parser {
     private String currentDocument;
     private Hashtable<String, String> months;
     private String[] words;
-    HashSet<String> stopWords;
+    private HashSet<String> stopWords;
+    private HashMap<String,Integer> numOfAppearance;
     public static long num;
     public static long tokens;
+
 
     public Parser(HashSet<String> stopWords) {
         currentWord = 0;
         createMonthsHash();
         this.stopWords = stopWords;
+        numOfAppearance = new HashMap<>();
         num=0;
         tokens=0;
     }
@@ -37,12 +40,22 @@ public class Parser {
         months.put("december", "12");
     }
 
+    public List<String> parse(String document){
+        currentWord = 0;
+        terms = new ArrayList<String>();
+        currentDocument = document;
+        document=document.trim();
+        words = document.split("\\s+");
+        num=num + words.length;
+        mainParser();
+        tokens=tokens + terms.size();
+        return terms;
+    }
+
     public void mainParser() {
         while(currentWord<words.length) {
             if(currentWord>=words.length)
                 continue;
-            if(words[currentWord].equals("May")&&words[currentWord+1].equals("1993"))
-                System.out.println();
             if (generateNumber())
                 continue;
             else if (generatePhrases())
@@ -56,8 +69,12 @@ public class Parser {
     private boolean generateWord(){
         if(currentWord>=words.length)
             return false;
-        String firstWord = words[currentWord].replaceAll("[\\[\\(&;'~`+|!*,.#\"\\)\\]]*","").toLowerCase();
-        if(firstWord.length()==1 || firstWord.length()==0||firstWord.equals("--")){
+        String firstWord = words[currentWord].replaceAll("[\\[\\(&;'?~`+|!%^*,.#\"\\)\\]]*","").toLowerCase();
+        int firstWordLength = firstWord.length();
+        while(firstWord.length()>0&&firstWord.charAt(0)=='-'){
+            firstWord=firstWord.substring(1);
+        }
+        if(firstWord.length()==0){
             currentWord++;
             return true;
         }
@@ -90,7 +107,7 @@ public class Parser {
         }
         if(firstWord.contains(":")){
            if(!addHour(firstWord)){
-               terms.add(firstWord);
+               terms.add(firstWord.replaceAll(":",""));
                currentWord++;
            }
            return true;
@@ -100,6 +117,7 @@ public class Parser {
             currentWord++;
             return true;
         }
+
     }
 
     private boolean addHour(String firstWord){
@@ -117,7 +135,7 @@ public class Parser {
                 currentWord++;
                 return true;
             }
-            else if(hour==12&&minute<60&&minute>=0){
+            else if(hour==12&&minute<60){
                 terms.add(splittedHourWord[0]+ " PM");
                 currentWord++;
                 return true;
@@ -143,32 +161,28 @@ public class Parser {
         return false;
     }
 
-    public List<String> parse(String document){
-        currentWord = 0;
-        terms = new ArrayList<String>();
-        currentDocument = document;
-        document=document.trim();
-        words = document.split("\\s+");
-        num=num + words.length;
-        mainParser();
-        tokens=tokens + terms.size();
-        return terms;
-    }
+
 
     public boolean generateNumber(){
-        String firstWord = words[currentWord].replaceAll("[[(#)\"]]*","");
+        String firstWord = words[currentWord].replaceAll("[[?(#)*'+`;\"]]*","");
         String nextWord = "";
         String thirdWord="";
         String fourthWord="";
-        boolean checkIfPlain = false;
+        int firstWordLenght = firstWord.length();
+        if(!firstWord.matches(".*\\d+.*"))
+            return false;
+        if((firstWord.charAt(firstWordLenght-1)==','||firstWord.charAt(firstWordLenght-1)=='.'||firstWord.charAt(firstWordLenght-1)=='-'||firstWord.charAt(firstWordLenght-1)=='-'||firstWord.charAt(firstWordLenght-1)==']'))
+            firstWord=firstWord.substring(0,firstWordLenght-1);
         if(currentWord<words.length-1)
             nextWord=words[currentWord+1].toLowerCase();
         if(currentWord+3<words.length-1) {
             thirdWord = words[currentWord + 2].toLowerCase();
             fourthWord = words[currentWord + 3].toLowerCase();
         }
-        if(!firstWord.matches(".*\\d+.*"))
-            return false;
+        if(firstWord.length()==0) {
+            currentWord++;
+            return true;
+        }
         if(nextWord.equals("thousand")){
             if(!addLargeNumbers(firstWord, nextWord)) {
                 terms.add(firstWord);
@@ -255,9 +269,11 @@ public class Parser {
             return true;
         }
         if(nextWord.contains("/")&&!thirdWord.equals("dollars")){
-            terms.add(firstWord+ " "+ nextWord);
-            currentWord=currentWord+2;
-            return true;
+            if(nextWord.matches("\\d+/\\d")) {
+                terms.add(firstWord + " " + nextWord);
+                currentWord = currentWord + 2;
+                return true;
+            }
         }
         if(months.get(nextWord)!=null){
             if(!addDate(firstWord,nextWord)){

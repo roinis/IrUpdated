@@ -11,16 +11,14 @@ public class Index {
     private ReadFile readFile;
     private Stemmer stemmer;
     private Posting posting;
-    int counter = 0;
     private HashMap<String,HashMap<String,Integer>> termFreqInDoc;
 
 
     public Index(boolean stem) throws IOException {
         this.stem=stem;
         dictionary=new HashMap<>();
-        readFile=new ReadFile("ch1");
+        readFile=new ReadFile("corpus");
         parser = new Parser(readFile.getStopWords());
-        stemmer=new Stemmer();
         posting = new Posting();
         documents = new HashMap<>();
         termFreqInDoc = new HashMap<>();
@@ -43,11 +41,24 @@ public class Index {
             for(String docID : docs.keySet()){
                 terms = parser.parse(docs.get(docID));
                 if(stem){
-                }
-                documents.put(docID,new Doc(docID,terms.size()));
-                getNumOfTermFreq(docID,terms);
-                for (String term: terms) {
-                    newTerm = saveTerm(term,docID);
+                    List<String> stemmedTerms = new ArrayList<>();
+                    for(String term:terms){
+                        stemmer = new Stemmer();
+                        stemmer.add(term.toCharArray(), term.length());
+                        stemmer.stem();
+                        stemmedTerms.add(stemmer.toString());
+                    }
+                    documents.put(docID,new Doc(docID,stemmedTerms.size()));
+                    getNumOfTermFreq(docID,stemmedTerms);
+                    for (String term: stemmedTerms) {
+                        newTerm = saveTerm(term,docID);
+                    }
+                }else {
+                    documents.put(docID, new Doc(docID, terms.size()));
+                    getNumOfTermFreq(docID, terms);
+                    for (String term : terms) {
+                        newTerm = saveTerm(term, docID);
+                    }
                 }
             }
             posting.addDocToPosting(posting.sortPostingElements(termFreqInDoc));
@@ -72,6 +83,13 @@ public class Index {
                 termsFreqMap.put(termFreq.toLowerCase(),1);
             }
         }
+        int max = 0;
+        for (Map.Entry<String, Integer> entry : termsFreqMap.entrySet()) {
+            if (entry.getValue().compareTo(max) > 0) {
+                max = entry.getValue();
+            }
+        }
+        this.documents.get(docID).setMostFreqWord(max);
         termFreqInDoc.put(docID,termsFreqMap);
     }
 
