@@ -1,27 +1,35 @@
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import javafx.util.Pair;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 
-public class main {
+public class main extends Application {
+
+    public void start(Stage stage) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader();
+        FileInputStream fxmlStream = new FileInputStream("src\\GuiFXML.fxml");
+        Pane rootPane = (Pane) fxmlLoader.load(fxmlStream);
+        Scene scene = new Scene(rootPane,600,400);
+        stage.setScene(scene);
+        stage.setTitle("Indexer");
+        stage.show();
+    }
 
     public static void main(String args[]) throws IOException {
 
-//        List<String> stringNames = new ArrayList<>(Arrays.asList("qi, FBIS3-1761 ,3|","qi, FBIS3-1778 ,1|","qian's, FBIS3-1905 ,1|","qian, FBIS3-1569 ,1|","qian, FBIS3-1843 ,1|","snipers, FBIS3-1505 ,2|","snow, FBIS3-1077 ,1|"));
-//        List<String> stringNames2 = new ArrayList<>(Arrays.asList("qi, FBIS3-1761 ,3|","qi, FBIS3-1778 ,1|","qian's, FBIS3-1905 ,1|","qian's, FBIS3-1905 ,1|","qian, FBIS3-1569 ,1|","qian, FBIS3-1843 ,1|","snipers, FBIS3-1505 ,2|","snow, FBIS3-1077 ,1|"));
-//        List<String> stringNames3 = new ArrayList<>(Arrays.asList("qi, FBIS3-1761 ,3|","qi, FBIS3-1778 ,1|","qian's, FBIS3-1905 ,1|","qian, FBIS3-1569 ,1|","qian, FBIS3-1843 ,1|","snipers, FBIS3-1505 ,2|","snow, FBIS3-1077 ,1|"));
-//        Posting pr = new Posting();
-//        List<String> retList = pr.twoWayMergeSort(stringNames,stringNames2);
-//        pr.combineTerms(retList);
-//        for (String term :pr.twoWayMergeSort(retList,stringNames3)) {
-//            System.out.println(term);
-//        };
+        launch(args);
 
-      Index indexer = new Index(false);
-      indexer.startIndex();
+
+
+
+
+
+
     }
 }

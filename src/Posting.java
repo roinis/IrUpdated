@@ -7,50 +7,52 @@ import static java.lang.System.out;
 import static java.lang.System.setOut;
 
 public class Posting {
-    private HashMap<String,String> postingFilePaths;
-    private int numberOfDocs ;
-    private String currentPostingPath;
     private List<File> postingPaths;
     private int counterForPostin;
-    private Index indexer;
+    private String postingPath;
     private int firstTime;
     private List<String> alphaBet;
     private List<List<String>> postingDictionary;
     private final int K1 = 20000;
     private final int K2 = 60000;
-    private PriorityQueue<String> minHeap;
     private int [] postingLastLine;
+    private PriorityQueue<String> minHeap;
 
-    public Posting(){
-        postingFilePaths=new HashMap<>();
+
+    public Posting(String postingPath){
         counterForPostin=0;
-        numberOfDocs = 0;
-        currentPostingPath ="";
+        this.postingPath=postingPath;
         postingPaths = new ArrayList<>();
         firstTime=0;
-        alphaBet = new ArrayList<>(Arrays.asList("abc","def","ghi","jkl","nop",
-                "qrs","tyu","vwx","yz"));
+        alphaBet = new ArrayList<>(Arrays.asList("abc","def","ghi","jkl","mno","pqr"
+                ,"stu","vwx","yz","chars"));
         postingDictionary = new ArrayList<>();
         minHeap = new PriorityQueue<>();
-
-
-
     }
 
+    public List<File> getPostingPaths() {
+        return postingPaths;
+    }
 
+    public void clearPosting(){
+        this.postingPaths.clear();
+        this.alphaBet.clear();
+        this.postingDictionary.clear();
+        postingLastLine = new int[0];
+    }
 
     public void createNewFile(String name){
-        createFile(System.getProperty("user.dir"),name);
+        createFile(name);
     }
 
-    public void createFile(String path,String name){
+    public void createFile(String name){
         if(!name.equals("")){
-            File file = new File(path + "\\" + name+ ".txt");
+            File file = new File(postingPath + "\\" + name+ ".txt");
             postingPaths.add(file);
         }
         else {
             counterForPostin++;
-            File file = new File(path + "\\" + "Posting" + counterForPostin + ".txt");
+            File file = new File(postingPath + "\\" + "Posting" + counterForPostin + ".txt");
             postingPaths.add(file);
         }
     }
@@ -80,7 +82,7 @@ public class Posting {
         List<String> postingTerms = new ArrayList<>();
         for (String docID: terms.keySet()){
             for(String term:terms.get(docID).keySet()){
-                postingTerms.add(term + "," + docID + "," + terms.get(docID).get(term) + "|");
+                postingTerms.add(term + ":" + docID + ":" + terms.get(docID).get(term) + "|");
             }
         }
         Collections.sort(postingTerms);
@@ -91,33 +93,6 @@ public class Posting {
 
     public List<List<String>> getPostingDictionary(){
         return postingDictionary;
-    }
-
-    private List<String> twoWayMergeSort(List<String> firstPostingList,List<String>secondPostingList){
-
-        int firstPostingPointer = 0;
-        int secondPostingPointer = 0;
-        List<String> mergedPosting = new ArrayList<>();
-        while (firstPostingPointer < firstPostingList.size() &&
-                secondPostingPointer < secondPostingList.size()) {
-            if (firstPostingList.get(firstPostingPointer).compareTo(secondPostingList.get(secondPostingPointer)) < 0) {
-                mergedPosting.add(firstPostingList.get(firstPostingPointer));
-                firstPostingPointer++;
-
-            } else {
-                mergedPosting.add(secondPostingList.get(secondPostingPointer));
-                secondPostingPointer++;
-
-            }
-        }
-        for (int i = firstPostingPointer; i < firstPostingList.size(); i++) {
-            mergedPosting.add(firstPostingList.get(i));
-        }
-        for (int i = secondPostingPointer; i < secondPostingList.size(); i++) {
-            mergedPosting.add(secondPostingList.get(i));
-        }
-        return mergedPosting;
-
     }
 
     public List<String> combineTerms(List<String> terms) {
@@ -133,17 +108,29 @@ public class Posting {
                 firstTime = false;
                 continue;
             }
-            splittedTerm = term.split(",");
-            if (previousTerm.split(",")[0].equals(splittedTerm[0])){
-                previousTerm = previousTerm + splittedTerm[1] + "," + splittedTerm[2];
-                if(listCounter == terms.size() - 1)
+            if(term == null)
+                continue;
+            splittedTerm = term.split(":");
+            if (previousTerm.split(":")[0].equals(splittedTerm[0])) {
+                previousTerm = previousTerm + splittedTerm[1] + ":" + splittedTerm[2];
+                if (listCounter == terms.size() - 1)
                     combineTerms.add(previousTerm);
-            }else{
+            } else {
                 combineTerms.add(previousTerm);
-                previousTerm=term;
+                previousTerm = term;
             }
         }
+
         return combineTerms;
+    }
+
+    public void mergePostingFiles(){
+        List<List<String>> files = new ArrayList<>();
+        postingLastLine = new int[postingPaths.size()];
+        for(File f: postingPaths){
+            files.add(readKLinesFromDoc(f.getAbsolutePath(),0));
+        }
+        KWayMerge(files);
     }
 
     private List<String> readKLinesFromDoc(String DocPath,int startIndex) {
@@ -228,15 +215,131 @@ public class Posting {
 
     }
 
-    public void mergePostingFiles(){
-        List<List<String>> files = new ArrayList<>();
-        postingLastLine = new int[postingPaths.size()];
-        for(File f: postingPaths){
-            files.add(readKLinesFromDoc(f.getAbsolutePath(),0));
-        }
-        KWayMerge(files);
+    public HashMap<String,Term> splitPostingToAlphaBet(HashMap<String,Term> dictionary){
+        int updatedFile =0;
+        Term term;
+        int[] fileCounter = new int[10];
+        List<String> kLines = new ArrayList<>();
+        BufferedReader reader = null;
+        FileWriter abc,def,ghi,jkl,mno,pqr,stu,vwx,yz,chars;
+        String postingLine = "";
+        String []postingLineSplited;
+        int numberOfTerms = 0;
+        for(String s:alphaBet)
+            createNewFile(s);
+        try {
+            abc = new FileWriter(postingPaths.get(postingPaths.size() - 10).getPath(), true);
+            def = new FileWriter(postingPaths.get(postingPaths.size() - 9).getPath(), true);
+            ghi = new FileWriter(postingPaths.get(postingPaths.size() - 8).getPath(), true);
+            jkl = new FileWriter(postingPaths.get(postingPaths.size() - 7).getPath(), true);
+            mno = new FileWriter(postingPaths.get(postingPaths.size() - 6).getPath(), true);
+            pqr = new FileWriter(postingPaths.get(postingPaths.size() - 5).getPath(), true);
+            stu = new FileWriter(postingPaths.get(postingPaths.size() - 4).getPath(), true);
+            vwx = new FileWriter(postingPaths.get(postingPaths.size() - 3).getPath(), true);
+            yz = new FileWriter(postingPaths.get(postingPaths.size() - 2).getPath(), true);
+            chars = new FileWriter(postingPaths.get(postingPaths.size() - 1).getPath(), true);
 
+            reader = new BufferedReader(new FileReader(postingPath+"\\combinedList.txt"));
+            while ((postingLine = reader.readLine()) != null) {
+                postingLineSplited = postingLine.split(":");
+                /**
+                 if(dictionary.containsKey(postingLineSplited[0])){
+                 term = dictionary.get(postingLineSplited[0]).getTerm();
+                 postingLineSplited[0] = term + " #";
+                 postingLine = String.join(":",postingLineSplited)+ "\n";
+                 }
+                 **/
+                postingLine = postingLine +"\n";
+                if(postingLineSplited[0].length() == 0)
+                    chars.write(postingLine);
+                else if(postingLineSplited[0].charAt(0) >= 'a' && postingLineSplited[0].charAt(0) <= 'c'){
+                    abc.write(postingLine);
+                    updatedFile = 0;
+                    fileCounter[0]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'd' && postingLineSplited[0].charAt(0) <= 'f'){
+                    def.write(postingLine);
+                    updatedFile = 1;
+                    fileCounter[1]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'g' && postingLineSplited[0].charAt(0) <= 'i'){
+                    ghi.write(postingLine);
+                    updatedFile = 2;
+                    fileCounter[2]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'j' && postingLineSplited[0].charAt(0) <= 'l'){
+                    jkl.write(postingLine);
+                    updatedFile =3;
+                    fileCounter[3]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'm' && postingLineSplited[0].charAt(0) <= 'p'){
+                    mno.write(postingLine);
+                    updatedFile = 4;
+                    fileCounter[4]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'p' && postingLineSplited[0].charAt(0) <= 'r'){
+                    pqr.write(postingLine);
+                    updatedFile = 5;
+                    fileCounter[5]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 's' && postingLineSplited[0].charAt(0) <= 'u'){
+                    stu.write(postingLine);
+                    updatedFile = 6;
+                    fileCounter[6]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'v' && postingLineSplited[0].charAt(0) <= 'x'){
+                    vwx.write(postingLine);
+                    updatedFile = 7;
+                    fileCounter[7]++;
+                }
+                else if(postingLineSplited[0].charAt(0) >= 'y' && postingLineSplited[0].charAt(0) <= 'z'){
+                    yz.write(postingLine);
+                    updatedFile = 8;
+                    fileCounter[8]++;
+                }
+                else{
+                    updatedFile = 9;
+                    fileCounter[9]++;
+                    chars.write(postingLine);
+
+                }
+                if(dictionary.containsKey(postingLineSplited[0])){
+                    term =dictionary.get(postingLineSplited[0]);
+                    if(term.getLine()==-1)
+                        term.setLine(fileCounter[updatedFile]);
+                }
+            }
+            reader.close();
+            abc.flush();
+            def.flush();
+            ghi.flush();
+            jkl.flush();
+            mno.flush();
+            pqr.flush();
+            stu.flush();
+            vwx.flush();
+            yz.flush();
+            chars.flush();
+
+            abc.close();
+            def.close();
+            ghi.close();
+            jkl.close();
+            mno.close();
+            pqr.close();
+            stu.close();
+            vwx.close();
+            yz.close();
+            chars.close();
+            System.out.println(numberOfTerms);
+            return dictionary;
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        }
     }
+
+
 
 }
 

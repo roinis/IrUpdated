@@ -4,25 +4,22 @@ import java.util.Objects;
 
 public class Term {
 
-    private int idf;
     private int tf;
     private int line;
     private String term;
-    private String currentDoc;
 
     public Term(String term) {
-        this.idf = 0;
+        line = -1;
         this.tf = 0;
         this.term = term;
     }
 
-    public int getIdf() {
-        return idf;
+    public Term(String term,int tf){
+        this.tf=tf;
+        this.term=term;
+        line = -1;
     }
 
-    public void setIdf(int idf) {
-        this.idf = idf;
-    }
 
     public int getTf() {
         return tf;

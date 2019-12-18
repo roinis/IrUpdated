@@ -17,11 +17,22 @@ public class Parser {
 
     public Parser(HashSet<String> stopWords) {
         currentWord = 0;
+        terms = new ArrayList<>();
+        months = new Hashtable<>();
+        stopWords = new HashSet<>();
         createMonthsHash();
         this.stopWords = stopWords;
         numOfAppearance = new HashMap<>();
         num=0;
         tokens=0;
+    }
+
+    public void clearParser(){
+        terms.clear();
+        months.clear();
+        stopWords.clear();
+        numOfAppearance.clear();
+        words=new String[0];
     }
 
     private void createMonthsHash() {
@@ -65,6 +76,8 @@ public class Parser {
             }
         }
     }
+
+
 
     private boolean generateWord(){
         if(currentWord>=words.length)

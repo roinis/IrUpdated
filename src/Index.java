@@ -1,35 +1,50 @@
 import javafx.util.Pair;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class Index {
+    public HashMap<String, Term> getDictionary() {
+        return dictionary;
+    }
+
     private HashMap<String,Term> dictionary;
     private HashMap<String,Doc> documents;
     private boolean stem;
     private Parser parser;
+    private String corpusPath;
     private ReadFile readFile;
     private Stemmer stemmer;
     private Posting posting;
+    private String postingPath;
     private HashMap<String,HashMap<String,Integer>> termFreqInDoc;
+    private List<Term> dictionaryListSorted;
 
+    public List<Term> getDictionaryListSorted() {
+        return dictionaryListSorted;
+    }
 
-    public Index(boolean stem) throws IOException {
+    public Index(boolean stem, String corpusPath, String postingPath) throws IOException {
         this.stem=stem;
         dictionary=new HashMap<>();
-        readFile=new ReadFile("corpus");
+        this.corpusPath=corpusPath;
+        this.postingPath=postingPath;
+        readFile=new ReadFile(this.corpusPath);
         parser = new Parser(readFile.getStopWords());
-        posting = new Posting();
+        posting = new Posting(postingPath);
         documents = new HashMap<>();
         termFreqInDoc = new HashMap<>();
     }
 
+    public void clearIndex(){
+        this.dictionary.clear();
+        this.documents.clear();
+        this.termFreqInDoc.clear();
+    }
+
     public void startIndex(){
         HashMap<String,String> docs=null;
-        HashMap<String,List<Pair<String,Integer>>> termsFreqSorted  = new HashMap<>();
         List<String> terms=null;
-        Term newTerm = null;
-        int numberOfDocs = 0;
         boolean continueIteration = true;
         while(continueIteration){
             if(!readFile.readFewFiles())
@@ -43,21 +58,23 @@ public class Index {
                 if(stem){
                     List<String> stemmedTerms = new ArrayList<>();
                     for(String term:terms){
-                        stemmer = new Stemmer();
-                        stemmer.add(term.toCharArray(), term.length());
-                        stemmer.stem();
-                        stemmedTerms.add(stemmer.toString());
+                        if(term.matches("\\w+")) {
+                            stemmer = new Stemmer();
+                            stemmer.add(term.toCharArray(), term.length());
+                            stemmer.stem();
+                            stemmedTerms.add(stemmer.toString());
+                        }
                     }
                     documents.put(docID,new Doc(docID,stemmedTerms.size()));
                     getNumOfTermFreq(docID,stemmedTerms);
                     for (String term: stemmedTerms) {
-                        newTerm = saveTerm(term,docID);
+                        saveTerm(term);
                     }
                 }else {
                     documents.put(docID, new Doc(docID, terms.size()));
                     getNumOfTermFreq(docID, terms);
                     for (String term : terms) {
-                        newTerm = saveTerm(term, docID);
+                        saveTerm(term);
                     }
                 }
             }
@@ -65,10 +82,63 @@ public class Index {
             termFreqInDoc = new HashMap<>();
             docs.clear();
         }
+        System.out.println("Dictionary size");
+        System.out.println(dictionary.size());
         System.out.println("finish parse");
-        //posting.alphaBetMergeSort();
-        setDictionaryPostingLocation();
+        posting.mergePostingFiles();
+        dictionary = posting.splitPostingToAlphaBet(dictionary);
+        saveDictionaryToDisk();
+        System.out.println("check");
+    }
 
+    private void sortDict(){
+        dictionaryListSorted = new ArrayList<>();
+        for (String termString:dictionary.keySet()) {
+            dictionaryListSorted.add(dictionary.get(termString));
+        }
+        Collections.sort(dictionaryListSorted, new TermComprator());
+    }
+
+    private void saveDictionaryToDisk(){
+        sortDict();
+        FileWriter dict= null;
+        posting.createNewFile("Dictionary");
+        try {
+            dict = new FileWriter(posting.getPostingPaths().get(posting.getPostingPaths().size() -1), true);
+            for (Term term:dictionaryListSorted) {
+                dict.write(term.getTerm() + "#" + String.valueOf(term.getTf()) + "\n");
+            }
+            dict.flush();
+            dict.close();
+        }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void createDictionaryFromFile(){
+        dictionary = new HashMap<>();
+        BufferedReader reader = null;
+        String postingLine;
+        String []splitedLine;
+        try {
+            reader = new BufferedReader(new FileReader(postingPath+"\\Dictionary.txt"));
+            while ((postingLine = reader.readLine()) != null) {
+                splitedLine = postingLine.split("#");
+                if (splitedLine.length == 0)
+                    continue;
+                try{
+                    int tf = Integer.valueOf(splitedLine[1]);
+                    dictionary.put(splitedLine[0].toLowerCase(),new Term(splitedLine[0],tf));
+                }
+                catch (Exception e){
+                    System.out.println(e);
+                }
+            }
+            sortDict();
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
     }
 
     private  void getNumOfTermFreq(String docID ,List<String> terms){
@@ -94,22 +164,19 @@ public class Index {
     }
 
 
-    private void setDictionaryPostingLocation(){
-        List<List<String>> postingDictionary = posting.getPostingDictionary();
-        for(List<String> list:postingDictionary){
-            for (int i = 0;i<list.size();i++){
-                try {
-                    dictionary.get(list.get(i).split(",")[0]).setLine(i + 1);
-                }
-                catch (Exception e) {
-                    System.out.println();
-                }
-            }
+    public void resetPosting() throws IOException {
+        List<File> postingPaths = this.posting.getPostingPaths();
+        for(File file: postingPaths){
+            file.delete();
         }
+        parser.clearParser();
+        posting.clearPosting();
+        readFile.clearFileReader();
+        this.clearIndex();
     }
 
 
-    private Term saveTerm(String term,String docID){
+    private  void saveTerm(String term){
         String termLowerCase = term.toLowerCase();
         Term newTerm = null;
         if(dictionary.containsKey(termLowerCase)){
@@ -121,8 +188,16 @@ public class Index {
             newTerm = new Term(term);
             dictionary.put(termLowerCase,newTerm);
         }
-        newTerm.setIdf(newTerm.getIdf() + 1);
-        return newTerm;
+        newTerm.setTf(newTerm.getTf() + 1);
+    }
+
+    public class TermComprator implements Comparator {
+        @Override
+        public int compare(Object o1, Object o2) {
+            Term firstTerm = (Term) o1;
+            Term secondTerm = (Term) o2;
+            return firstTerm.getTerm().compareTo(secondTerm.getTerm());
+        }
     }
 
 

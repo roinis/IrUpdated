@@ -9,7 +9,7 @@ import java.util.Hashtable;
 
 public class ReadFile {
 
-    private String path;
+    private String corpusPath;
     private HashSet<String> stopWords;
     private HashMap<String,String> documents ;
     private static int currentFile;
@@ -17,13 +17,19 @@ public class ReadFile {
     File[] directories;
 
     public ReadFile(String path) throws IOException {
-        this.path = path;
+        this.corpusPath = path;
         currentFile=0;
         stopWords = new HashSet<>();
         documents = new HashMap();
         readStopWords();
         getDocumentsPath();
 
+    }
+
+    public void clearFileReader(){
+        stopWords.clear();
+        documents.clear();
+        directories=new File[0];
     }
 
     public HashMap<String, String> getDocuments() {
@@ -43,7 +49,7 @@ public class ReadFile {
     }
 
     private void readStopWords() throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(path+"\\stopwords.txt"));
+        BufferedReader br = new BufferedReader(new FileReader(corpusPath+"\\stopwords.txt"));
         String word;
         while((word = br.readLine()) != null){
             stopWords.add(word);
@@ -104,7 +110,7 @@ public class ReadFile {
     }
 
     private void getDocumentsPath() throws IOException {
-        directories = new File(path).listFiles(new FileFilter(){
+        directories = new File(corpusPath).listFiles(new FileFilter(){
             @Override
             public boolean accept(File file){
                 return file.isDirectory();
