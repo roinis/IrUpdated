@@ -242,13 +242,6 @@ public class Posting {
             reader = new BufferedReader(new FileReader(postingPath+"\\combinedList.txt"));
             while ((postingLine = reader.readLine()) != null) {
                 postingLineSplited = postingLine.split(":");
-                /**
-                 if(dictionary.containsKey(postingLineSplited[0])){
-                 term = dictionary.get(postingLineSplited[0]).getTerm();
-                 postingLineSplited[0] = term + " #";
-                 postingLine = String.join(":",postingLineSplited)+ "\n";
-                 }
-                 **/
                 postingLine = postingLine +"\n";
                 if(postingLineSplited[0].length() == 0)
                     chars.write(postingLine);
@@ -320,7 +313,6 @@ public class Posting {
             vwx.flush();
             yz.flush();
             chars.flush();
-
             abc.close();
             def.close();
             ghi.close();
@@ -331,7 +323,11 @@ public class Posting {
             vwx.close();
             yz.close();
             chars.close();
-            System.out.println(numberOfTerms);
+            for(File file:postingPaths){
+                if(file.getName().matches("Posting\\d+.txt")||file.getName().matches("combinedList.txt")){
+                    file.delete();
+                }
+            }
             return dictionary;
         } catch (Exception e) {
             System.out.println(e);

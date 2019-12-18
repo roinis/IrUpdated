@@ -7,7 +7,6 @@ public class Index {
     public HashMap<String, Term> getDictionary() {
         return dictionary;
     }
-
     private HashMap<String,Term> dictionary;
     private HashMap<String,Doc> documents;
     private boolean stem;
@@ -19,6 +18,7 @@ public class Index {
     private String postingPath;
     private HashMap<String,HashMap<String,Integer>> termFreqInDoc;
     private List<Term> dictionaryListSorted;
+    private List<Term> specificDocTerm;
 
     public List<Term> getDictionaryListSorted() {
         return dictionaryListSorted;
@@ -82,13 +82,38 @@ public class Index {
             termFreqInDoc = new HashMap<>();
             docs.clear();
         }
-        System.out.println("Dictionary size");
+        System.out.println("Dictionary size is:");
         System.out.println(dictionary.size());
-        System.out.println("finish parse");
         posting.mergePostingFiles();
         dictionary = posting.splitPostingToAlphaBet(dictionary);
         saveDictionaryToDisk();
-        System.out.println("check");
+        printSpecificDocToFile();
+    }
+
+    public void printNumbersInDictionary(){
+        int counter = 0;
+        for(String term:dictionary.keySet()){
+            if(term.matches(".*\\d+.*")){
+                counter++;
+            }
+        }
+        System.out.println("");
+        System.out.println("The amount of terms with numbers is: "+counter);
+    }
+
+    private void printSpecificDocToFile(){
+
+        HashMap<String,Integer> termsAndFreq = documents.get(" FBIS3-3366 ").getTermsAndFrequency();
+        List<String> terms = new ArrayList<>();
+        for(String term:termsAndFreq.keySet()){
+            terms.add(term + " " + String.valueOf(termsAndFreq.get(term)));
+        }
+        System.out.println("");
+        System.out.println("The terms in Document FBIS3-3366 are:");
+        Collections.sort(terms);
+            for(String term:terms){
+                System.out.println(term);
+            }
     }
 
     private void sortDict(){
@@ -98,6 +123,7 @@ public class Index {
         }
         Collections.sort(dictionaryListSorted, new TermComprator());
     }
+
 
     private void saveDictionaryToDisk(){
         sortDict();
@@ -158,7 +184,8 @@ public class Index {
             if (entry.getValue().compareTo(max) > 0) {
                 max = entry.getValue();
             }
-        }
+        }if(docID.matches(" FBIS3-3366 "))
+            this.documents.get(docID).setTermsAndFrequency(termsFreqMap);
         this.documents.get(docID).setMostFreqWord(max);
         termFreqInDoc.put(docID,termsFreqMap);
     }
@@ -189,6 +216,59 @@ public class Index {
             dictionary.put(termLowerCase,newTerm);
         }
         newTerm.setTf(newTerm.getTf() + 1);
+    }
+
+    public void topTenTerms(){
+        List<String> termsAndFreq = new ArrayList<>();
+        String[] mostTopTenFreq = new String[10];
+        String[] leastTopTenFreq = new String[10];
+
+        for(String term:dictionary.keySet()){
+            termsAndFreq.add(dictionary.get(term).getTerm() + " #" + dictionary.get(term).getTf());
+        }
+
+        Collections.sort(termsAndFreq,new FreqComparator());
+        FileWriter fw=null;
+        try{
+            String str = "";
+            fw = new FileWriter(System.getProperty("user.dir")+"\\zipf.csv", true);
+            for(int i=termsAndFreq.size()-1;i>-1;i--){
+                fw.append(termsAndFreq.get(i).split("#")[1]+"\n");
+                str = termsAndFreq.get(i).split("#")[1]+"\n";
+            }
+            fw.flush();
+            fw.close();
+        }
+        catch(Exception e){
+            System.out.println(e);
+        }
+
+        for(int i = 0; i < 10; i++){
+            leastTopTenFreq[i] = termsAndFreq.get(i);
+            mostTopTenFreq[i] = termsAndFreq.get(termsAndFreq.size() - (i + 1));
+        }
+        System.out.println("");
+
+        System.out.println("The top ten terms with most frequencies are:");
+        for (int i = 0; i<10; i++){
+            System.out.println(mostTopTenFreq[i].replaceAll("#",""));
+        }
+        System.out.println("");
+        System.out.println("The top ten terms with least frequencies are:");
+        for (int i = 0; i<10; i++){
+            System.out.println(leastTopTenFreq[i].replaceAll("#",""));
+        }
+    }
+
+    public class FreqComparator implements Comparator {
+        @Override
+        public int compare(Object o1, Object o2) {
+            String firstTerm = (String) o1;
+            String secondTerm = (String) o2;
+            int firstTermFreq = Integer.valueOf(firstTerm.split("#")[1]);
+            int secondTermFreq = Integer.valueOf(secondTerm.split("#")[1]);
+            return firstTermFreq - secondTermFreq;
+        }
     }
 
     public class TermComprator implements Comparator {

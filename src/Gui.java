@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 
 public class Gui {
@@ -43,16 +44,6 @@ public class Gui {
     public Gui(){
     }
 
-    public void start(Stage stage) throws IOException {
-        mainStage=stage;
-        FXMLLoader fxmlLoader = new FXMLLoader();
-        FileInputStream fxmlStream = new FileInputStream(System.getProperty("user.dir")+"\\src\\GuiFXML.fxml");
-        Pane rootPane = (Pane) fxmlLoader.load(fxmlStream);
-        Scene scene = new Scene(rootPane,600,400);
-        stage.setScene(scene);
-        stage.setTitle("Indexer");
-        stage.show();
-    }
 
     public void getCorpusBrowser(){
         DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -76,6 +67,7 @@ public class Gui {
 
     public void run() throws IOException {
         try {
+            long startTime = 0;
             if (tx_corpusPath.getText().isEmpty() || tx_postingPath.getText().isEmpty()) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Error");
@@ -84,6 +76,7 @@ public class Gui {
             } else {
                 postingPath = tx_postingPath.getText();
                 corpusPath = tx_corpusPath.getText();
+                startTime = System.currentTimeMillis();
                 if (stem.isSelected()) {
                     index = new Index(true, corpusPath, postingPath);
                     index.startIndex();
@@ -92,6 +85,9 @@ public class Gui {
                     index.startIndex();
                 }
             }
+            long endTime = System.currentTimeMillis();
+            System.out.println("");
+            System.out.println("It took " + TimeUnit.MILLISECONDS.toMinutes(endTime - startTime) + " Minutes to create the Index");
         }
         catch (Exception e){
             System.out.println(e);
@@ -132,6 +128,22 @@ public class Gui {
                 alert.showAndWait();
             }
         }catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void printNumbersAmount(){
+        try{
+            index.printNumbersInDictionary();
+        }catch(Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public void print10Terms(){
+        try{
+            index.topTenTerms();
+        }catch(Exception e){
             System.out.println(e);
         }
     }

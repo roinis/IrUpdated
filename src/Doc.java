@@ -1,3 +1,9 @@
+import javafx.util.Pair;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 public class Doc {
 
     private int numOfwords;
@@ -5,12 +11,26 @@ public class Doc {
     private String docID;
     private int maxFrequency;
 
-    public Doc(String docID,int numOfwords) {
+    public HashMap<String, Integer> getTermsAndFrequency() {
+        return termsAndFrequency;
+    }
+
+    private HashMap<String,Integer> termsAndFrequency;
+
+
+
+    public Doc(String docID, int numOfwords) {
         this.numOfwords = numOfwords;
         this.mostFreqWord = 0;
         this.docID = docID;
         this.maxFrequency = 0;
     }
+
+    public void setTermsAndFrequency(HashMap<String, Integer> termsAndFrequency) {
+        this.termsAndFrequency = termsAndFrequency;
+    }
+
+
 
     public int getNumOfwords() {
         return numOfwords;

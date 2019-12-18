@@ -19,9 +19,8 @@ public class Parser {
         currentWord = 0;
         terms = new ArrayList<>();
         months = new Hashtable<>();
-        stopWords = new HashSet<>();
-        createMonthsHash();
         this.stopWords = stopWords;
+        createMonthsHash();
         numOfAppearance = new HashMap<>();
         num=0;
         tokens=0;
@@ -78,7 +77,6 @@ public class Parser {
     }
 
 
-
     private boolean generateWord(){
         if(currentWord>=words.length)
             return false;
@@ -105,7 +103,6 @@ public class Parser {
             currentWord++;
             return false;
         }
-
         if(firstWord.contains("/")){
             String[] splittedOrWord = firstWord.split("/");
             if(splittedOrWord.length<2){
