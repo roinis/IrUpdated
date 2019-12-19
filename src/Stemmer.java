@@ -43,6 +43,9 @@ import java.io.*;
  * by calling one of the various stem(something) methods.
  */
 
+/**
+ * Classed used for implementing the porter stemmer - taken from the internet
+ */
 class Stemmer
 {  private char[] b;
     private int i,     /* offset into b */

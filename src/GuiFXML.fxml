@@ -35,7 +35,5 @@
             <Font size="25.0" />
          </font>
       </TextArea>
-      <Button layoutX="400.0" layoutY="300.0" mnemonicParsing="false" onAction="#printNumbersAmount" text="Print Numbers" />
-      <Button layoutX="400.0" layoutY="340.0" mnemonicParsing="false" onAction="#print10Terms" text="Print 10 Terms" />
    </children>
 </Pane>

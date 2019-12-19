@@ -6,19 +6,25 @@ import java.util.*;
 import static java.lang.System.out;
 import static java.lang.System.setOut;
 
+/**
+ * Class which used for creating the posting file
+ */
 public class Posting {
     private List<File> postingPaths;
     private int counterForPostin;
     private String postingPath;
     private int firstTime;
     private List<String> alphaBet;
-    private List<List<String>> postingDictionary;
     private final int K1 = 20000;
     private final int K2 = 60000;
     private int [] postingLastLine;
     private PriorityQueue<String> minHeap;
 
 
+    /**
+     * Constructor using for initializing the object
+     * @param postingPath
+     */
     public Posting(String postingPath){
         counterForPostin=0;
         this.postingPath=postingPath;
@@ -26,25 +32,38 @@ public class Posting {
         firstTime=0;
         alphaBet = new ArrayList<>(Arrays.asList("abc","def","ghi","jkl","mno","pqr"
                 ,"stu","vwx","yz","chars"));
-        postingDictionary = new ArrayList<>();
         minHeap = new PriorityQueue<>();
     }
 
+    /**
+     * Method to get the paths for all the posting files
+     * @return
+     */
     public List<File> getPostingPaths() {
         return postingPaths;
     }
 
+    /**
+     * Method for clearing the ram - used when clicking on "reset" button
+     */
     public void clearPosting(){
         this.postingPaths.clear();
         this.alphaBet.clear();
-        this.postingDictionary.clear();
         postingLastLine = new int[0];
     }
 
+    /**
+     * Method used to create new file in the computer - given a name
+     * @param name
+     */
     public void createNewFile(String name){
         createFile(name);
     }
 
+    /**
+     * Method used to create new file in the computer - given a name
+     * @param name
+     */
     public void createFile(String name){
         if(!name.equals("")){
             File file = new File(postingPath + "\\" + name+ ".txt");
@@ -57,6 +76,10 @@ public class Posting {
         }
     }
 
+    /**
+     * First phase of the posting , given a list of terms writes its to disk
+     * @param allTermsInDoc
+     */
     public void addDocToPosting(List<String> allTermsInDoc){
         try {
             FileWriter out = new FileWriter(postingPaths.get(postingPaths.size() - 1).getPath(), true);
@@ -78,6 +101,11 @@ public class Posting {
         }
     }
 
+    /**
+     * Method used to sord the docs of a specific terms
+     * @param terms
+     * @return List
+     */
     public List<String> sortPostingElements(HashMap<String,HashMap<String,Integer>> terms){
         List<String> postingTerms = new ArrayList<>();
         for (String docID: terms.keySet()){
@@ -91,39 +119,10 @@ public class Posting {
 
 
 
-    public List<List<String>> getPostingDictionary(){
-        return postingDictionary;
-    }
-
-    public List<String> combineTerms(List<String> terms) {
-        String previousTerm = "";
-        boolean firstTime = true;
-        String[] splittedTerm;
-        List<String> combineTerms = new ArrayList<>();
-        int listCounter = -1;
-        for(String term:terms){
-            listCounter++;
-            if(firstTime){
-                previousTerm = term;
-                firstTime = false;
-                continue;
-            }
-            if(term == null)
-                continue;
-            splittedTerm = term.split(":");
-            if (previousTerm.split(":")[0].equals(splittedTerm[0])) {
-                previousTerm = previousTerm + splittedTerm[1] + ":" + splittedTerm[2];
-                if (listCounter == terms.size() - 1)
-                    combineTerms.add(previousTerm);
-            } else {
-                combineTerms.add(previousTerm);
-                previousTerm = term;
-            }
-        }
-
-        return combineTerms;
-    }
-
+    /**
+     * Second phase of posting - after writing mang posting files
+     * merging the files to one big file sorted
+     */
     public void mergePostingFiles(){
         List<List<String>> files = new ArrayList<>();
         postingLastLine = new int[postingPaths.size()];
@@ -132,6 +131,13 @@ public class Posting {
         }
         KWayMerge(files);
     }
+
+    /**
+     * function to read K lines from a given file path- used with merging
+     * @param DocPath
+     * @param startIndex
+     * @return list of posting lines
+     */
 
     private List<String> readKLinesFromDoc(String DocPath,int startIndex) {
         List<String> kLines = new ArrayList<>();
@@ -155,8 +161,11 @@ public class Posting {
         }
     }
 
-
-
+    /**
+     * Mehod used with mergePostingFiles - implements the algorithm for merging the files to one file
+     * using the multiway merge sort algorithm
+     * @param postingFilesKlines
+     */
     private void KWayMerge(List<List<String>> postingFilesKlines){
         List<String> termsToSave = new ArrayList<>();
         int numberOfFiles = postingPaths.size();
@@ -215,7 +224,12 @@ public class Posting {
 
     }
 
-    public HashMap<String,Term> splitPostingToAlphaBet(HashMap<String,Term> dictionary){
+    /**
+     * Third phase of posting -spliting the combined file to alphabet files
+     * @param dictionary
+     * @param stem
+     */
+    public HashMap<String,Term> splitPostingToAlphaBet(HashMap<String,Term> dictionary,boolean stem){
         int updatedFile =0;
         Term term;
         int[] fileCounter = new int[10];
@@ -226,7 +240,10 @@ public class Posting {
         String []postingLineSplited;
         int numberOfTerms = 0;
         for(String s:alphaBet)
-            createNewFile(s);
+            if(stem)
+                createNewFile(s + "-s");
+            else
+                createNewFile(s);
         try {
             abc = new FileWriter(postingPaths.get(postingPaths.size() - 10).getPath(), true);
             def = new FileWriter(postingPaths.get(postingPaths.size() - 9).getPath(), true);

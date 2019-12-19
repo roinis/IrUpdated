@@ -29,10 +29,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 
+/**
+ * Class used for the gui of the program
+ */
 public class Gui {
 
-    private Stage mainStage;
-    private BorderPane rootPane;
     public javafx.scene.control.TextField tx_corpusPath;
     private String corpusPath;
     public javafx.scene.control.TextField tx_postingPath;
@@ -41,10 +42,16 @@ public class Gui {
     private Index index;
 
 
+    /**
+     * Constructor
+     */
     public Gui(){
     }
 
 
+    /**
+     * Method used to open the file browser for the corpus path
+     */
     public void getCorpusBrowser(){
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Choose Corpus Directory:");
@@ -55,6 +62,9 @@ public class Gui {
         }
     }
 
+    /**
+     * Method used to open the file browser for the posting path
+     */
     public void getPostingBrowser(){
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Choose where to save the Posting Files:");
@@ -65,9 +75,13 @@ public class Gui {
         }
     }
 
+    /**
+     * Main Method which opens the first window
+     * @throws IOException
+     */
     public void run() throws IOException {
         try {
-            long startTime = 0;
+
             if (tx_corpusPath.getText().isEmpty() || tx_postingPath.getText().isEmpty()) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Error");
@@ -76,7 +90,7 @@ public class Gui {
             } else {
                 postingPath = tx_postingPath.getText();
                 corpusPath = tx_corpusPath.getText();
-                startTime = System.currentTimeMillis();
+
                 if (stem.isSelected()) {
                     index = new Index(true, corpusPath, postingPath);
                     index.startIndex();
@@ -85,15 +99,18 @@ public class Gui {
                     index.startIndex();
                 }
             }
-            long endTime = System.currentTimeMillis();
-            System.out.println("");
-            System.out.println("It took " + TimeUnit.MILLISECONDS.toMinutes(endTime - startTime) + " Minutes to create the Index");
+
+
         }
         catch (Exception e){
             System.out.println(e);
         }
     }
 
+    /**
+     * Method for the reset button
+     * @throws IOException
+     */
     public void reset() throws IOException {
         try {
             if(index!=null) {
@@ -108,6 +125,9 @@ public class Gui {
         }
     }
 
+    /**
+     * Method to load dictionary to memory from a file
+     */
     public void loadDictToMemory(){
         try {
             if(tx_corpusPath.getText().isEmpty()||tx_postingPath.getText().isEmpty()) {
@@ -132,22 +152,10 @@ public class Gui {
         }
     }
 
-    public void printNumbersAmount(){
-        try{
-            index.printNumbersInDictionary();
-        }catch(Exception e){
-            System.out.println(e);
-        }
-    }
 
-    public void print10Terms(){
-        try{
-            index.topTenTerms();
-        }catch(Exception e){
-            System.out.println(e);
-        }
-    }
-
+    /**
+     * Method used to show the terms of the dictionary
+     */
     public void showDict(){
         try {
             if (index == null) {

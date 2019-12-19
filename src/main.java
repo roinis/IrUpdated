@@ -13,7 +13,7 @@ public class main extends Application {
 
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader();
-        FileInputStream fxmlStream = new FileInputStream("src\\GuiFXML.fxml");
+        FileInputStream fxmlStream = new FileInputStream("GuiFXML.fxml");
         Pane rootPane = (Pane) fxmlLoader.load(fxmlStream);
         Scene scene = new Scene(rootPane,600,400);
         stage.setScene(scene);
@@ -22,6 +22,6 @@ public class main extends Application {
     }
 
     public static void main(String args[]) throws IOException {
-        launch(args);
+       launch(args);
     }
 }

@@ -3,6 +3,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.*;
 
+/**
+ * Class which parser a given sting to its basic terms
+ */
 public class Parser {
     private List<String> terms;
     private int currentWord;
@@ -10,30 +13,33 @@ public class Parser {
     private Hashtable<String, String> months;
     private String[] words;
     private HashSet<String> stopWords;
-    private HashMap<String,Integer> numOfAppearance;
-    public static long num;
-    public static long tokens;
 
 
+    /**
+     * Constructor of parser - initialize the Object
+     * @param stopWords
+     */
     public Parser(HashSet<String> stopWords) {
         currentWord = 0;
         terms = new ArrayList<>();
         months = new Hashtable<>();
         this.stopWords = stopWords;
         createMonthsHash();
-        numOfAppearance = new HashMap<>();
-        num=0;
-        tokens=0;
     }
 
+    /**
+     * Method to clear ram then clicking on "reset button"
+     */
     public void clearParser(){
         terms.clear();
         months.clear();
         stopWords.clear();
-        numOfAppearance.clear();
         words=new String[0];
     }
 
+    /**
+     * HashMap for months of the year - used for comparing string and creating dates
+     */
     private void createMonthsHash() {
         months = new Hashtable<>();
         months.put("january", "01");
@@ -50,18 +56,24 @@ public class Parser {
         months.put("december", "12");
     }
 
+    /**
+     * Main method for starting parsing on a given document
+     * @param document
+     * @return List of terms
+     */
     public List<String> parse(String document){
         currentWord = 0;
         terms = new ArrayList<String>();
         currentDocument = document;
         document=document.trim();
-        words = document.split("\\s+");
-        num=num + words.length;
+        words = document.split("\\s+|--");
         mainParser();
-        tokens=tokens + terms.size();
         return terms;
     }
 
+    /**
+     * Method to start the parsing  - first check if the string is a number and then phrase of simple word
+     */
     public void mainParser() {
         while(currentWord<words.length) {
             if(currentWord>=words.length)
@@ -75,8 +87,10 @@ public class Parser {
             }
         }
     }
-
-
+    /**
+     * Method which checks if the string is a simple word - could be stopword or and other
+     * @return
+     */
     private boolean generateWord(){
         if(currentWord>=words.length)
             return false;
@@ -130,6 +144,11 @@ public class Parser {
 
     }
 
+    /**
+     * Method to add a new phrase - new pattern for hours
+     * @param firstWord
+     * @return true if succeed, false if there is exception
+     */
     private boolean addHour(String firstWord){
         String[] splittedHourWord = firstWord.split(":");
         try{
@@ -157,6 +176,10 @@ public class Parser {
         }
     }
 
+    /**
+     * Method which checks if the string is a phrase
+     * @return true if the string is a phrase true otherwise
+     */
     private boolean generatePhrases(){
         if(currentWord + 3 < words.length){
             if(words[currentWord].toLowerCase().equals("between") &&
@@ -172,7 +195,10 @@ public class Parser {
     }
 
 
-
+    /**
+     * Main method which checks if the string is s number of any combination
+     * @return true if the sting is a number and added it to the terms
+     */
     public boolean generateNumber(){
         String firstWord = words[currentWord].replaceAll("[[?(#)*'+`;\"]]*","");
         String nextWord = "";
@@ -304,6 +330,12 @@ public class Parser {
         return true;
     }
 
+    /**
+     * Method to add the pattern of a number when there is a $ sign
+     * @param word
+     * @param nextWord
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPriceWithDollarSign(String word,String nextWord) {
         String priceTerm = "";
         float floatNumber;
@@ -343,6 +375,12 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add the pattern of Date
+     * @param number
+     * @param month
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addDate(String number, String month) {
         Term date;
         String dateText = "";
@@ -364,6 +402,11 @@ public class Parser {
         }
     }
 
+    /**
+     * Mehtod to add a plain number - all other patterns didnt work
+     * @param number
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPlainNumber(String number) {
         String formattedNumber = number.replaceAll(",*", "");
         String numberTerm = "";
@@ -395,6 +438,11 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add percent number pattern
+     * @param word
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPercentNumber(String word) {
         if (word.contains("%")) {
             terms.add(word);
@@ -408,6 +456,11 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add a number which has m pattern at the end (million)
+     * @param word
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPriceWithMSuffix(String word){
         float floatNumber;
         int intNumber;
@@ -424,6 +477,11 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add a number which has bn pattern at the end (billion)
+     * @param word
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPriceWithBnSuffix(String word){
         float floatNumber;
         long intNumber;
@@ -448,6 +506,11 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add number which the next word is dollar pattern
+     * @param number
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPriceWithDollar(String number) {
         number = number.replaceAll("[,]","");
         try {
@@ -478,6 +541,12 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add number which are bigger than 1000 - K/M/B pattern
+     * @param word
+     * @param nextWord
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addLargeNumbers(String word, String nextWord) {
         String termName;
         word = word.replaceAll(",","");
@@ -506,6 +575,12 @@ public class Parser {
         }
     }
 
+    /**
+     * Method to add the us dollar pattern
+     * @param word
+     * @param nextWord
+     * @return true if the pattern is as should be false otherwise
+     */
     private boolean addPriceWithUSandDollar(String word,String nextWord){
         float floatNumber;
         int intNumber;

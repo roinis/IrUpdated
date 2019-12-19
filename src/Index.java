@@ -3,6 +3,9 @@ import javafx.util.Pair;
 import java.io.*;
 import java.util.*;
 
+/**
+ * Class which represent the index  - saves the dictionary and starts all the process
+ */
 public class Index {
     public HashMap<String, Term> getDictionary() {
         return dictionary;
@@ -18,12 +21,15 @@ public class Index {
     private String postingPath;
     private HashMap<String,HashMap<String,Integer>> termFreqInDoc;
     private List<Term> dictionaryListSorted;
-    private List<Term> specificDocTerm;
 
-    public List<Term> getDictionaryListSorted() {
-        return dictionaryListSorted;
-    }
 
+    /**
+     * Constructor to initialize the index
+     * @param stem
+     * @param corpusPath
+     * @param postingPath
+     * @throws IOException
+     */
     public Index(boolean stem, String corpusPath, String postingPath) throws IOException {
         this.stem=stem;
         dictionary=new HashMap<>();
@@ -36,12 +42,19 @@ public class Index {
         termFreqInDoc = new HashMap<>();
     }
 
+    /**
+     * Method to clear the ram when clicking on "reset" button
+     */
     public void clearIndex(){
         this.dictionary.clear();
         this.documents.clear();
         this.termFreqInDoc.clear();
     }
 
+    /**
+     * Main method of index which creates the index using the read file and parsing classes
+     * and after that creating the psoting
+     */
     public void startIndex(){
         HashMap<String,String> docs=null;
         List<String> terms=null;
@@ -82,40 +95,15 @@ public class Index {
             termFreqInDoc = new HashMap<>();
             docs.clear();
         }
-        System.out.println("Dictionary size is:");
-        System.out.println(dictionary.size());
+
         posting.mergePostingFiles();
-        dictionary = posting.splitPostingToAlphaBet(dictionary);
+        dictionary = posting.splitPostingToAlphaBet(dictionary,stem);
         saveDictionaryToDisk();
-        printSpecificDocToFile();
     }
 
-    public void printNumbersInDictionary(){
-        int counter = 0;
-        for(String term:dictionary.keySet()){
-            if(term.matches(".*\\d+.*")){
-                counter++;
-            }
-        }
-        System.out.println("");
-        System.out.println("The amount of terms with numbers is: "+counter);
-    }
-
-    private void printSpecificDocToFile(){
-
-        HashMap<String,Integer> termsAndFreq = documents.get(" FBIS3-3366 ").getTermsAndFrequency();
-        List<String> terms = new ArrayList<>();
-        for(String term:termsAndFreq.keySet()){
-            terms.add(term + " " + String.valueOf(termsAndFreq.get(term)));
-        }
-        System.out.println("");
-        System.out.println("The terms in Document FBIS3-3366 are:");
-        Collections.sort(terms);
-            for(String term:terms){
-                System.out.println(term);
-            }
-    }
-
+    /**
+     * Method to read sort the dictionary alphabetcally
+     */
     private void sortDict(){
         dictionaryListSorted = new ArrayList<>();
         for (String termString:dictionary.keySet()) {
@@ -124,11 +112,26 @@ public class Index {
         Collections.sort(dictionaryListSorted, new TermComprator());
     }
 
+    /**
+     * Getter for the sorted Dictionary
+     * @return List of terms
+     */
+    public List<Term> getDictionaryListSorted() {
+        return dictionaryListSorted;
+    }
 
+    /**
+     * Method which saves the final dictionary to disk for easy retrieving
+     */
     private void saveDictionaryToDisk(){
         sortDict();
         FileWriter dict= null;
-        posting.createNewFile("Dictionary");
+        String fileName;
+        if(!stem)
+            fileName = "Dictionary";
+        else
+            fileName = "Dictionary-s";
+        posting.createNewFile(fileName);
         try {
             dict = new FileWriter(posting.getPostingPaths().get(posting.getPostingPaths().size() -1), true);
             for (Term term:dictionaryListSorted) {
@@ -141,13 +144,22 @@ public class Index {
         }
     }
 
+    /**
+     *method which loads the dictionary from file
+     */
     public void createDictionaryFromFile(){
         dictionary = new HashMap<>();
         BufferedReader reader = null;
         String postingLine;
         String []splitedLine;
+        String fileName;
         try {
-            reader = new BufferedReader(new FileReader(postingPath+"\\Dictionary.txt"));
+            if(!stem)
+                fileName = "\\Dictionary.txt";
+
+            else
+                fileName = "\\Dictionary-s.txt";
+            reader = new BufferedReader(new FileReader(postingPath+fileName));
             while ((postingLine = reader.readLine()) != null) {
                 splitedLine = postingLine.split("#");
                 if (splitedLine.length == 0)
@@ -167,6 +179,11 @@ public class Index {
         }
     }
 
+    /**
+     * finction which updates the number of appearances of term in a doc
+     * @param docID
+     * @param terms
+     */
     private  void getNumOfTermFreq(String docID ,List<String> terms){
         HashMap<String,Integer> termsFreqMap = new HashMap<>();
         int freq = 0;
@@ -191,6 +208,10 @@ public class Index {
     }
 
 
+    /**
+     * Method to clear the posting
+     * @throws IOException
+     */
     public void resetPosting() throws IOException {
         List<File> postingPaths = this.posting.getPostingPaths();
         for(File file: postingPaths){
@@ -203,6 +224,10 @@ public class Index {
     }
 
 
+    /**
+     * function which create new term for each token
+     * @param term
+     */
     private  void saveTerm(String term){
         String termLowerCase = term.toLowerCase();
         Term newTerm = null;
@@ -218,48 +243,10 @@ public class Index {
         newTerm.setTf(newTerm.getTf() + 1);
     }
 
-    public void topTenTerms(){
-        List<String> termsAndFreq = new ArrayList<>();
-        String[] mostTopTenFreq = new String[10];
-        String[] leastTopTenFreq = new String[10];
 
-        for(String term:dictionary.keySet()){
-            termsAndFreq.add(dictionary.get(term).getTerm() + " #" + dictionary.get(term).getTf());
-        }
-
-        Collections.sort(termsAndFreq,new FreqComparator());
-        FileWriter fw=null;
-        try{
-            String str = "";
-            fw = new FileWriter(System.getProperty("user.dir")+"\\zipf.csv", true);
-            for(int i=termsAndFreq.size()-1;i>-1;i--){
-                fw.append(termsAndFreq.get(i).split("#")[1]+"\n");
-                str = termsAndFreq.get(i).split("#")[1]+"\n";
-            }
-            fw.flush();
-            fw.close();
-        }
-        catch(Exception e){
-            System.out.println(e);
-        }
-
-        for(int i = 0; i < 10; i++){
-            leastTopTenFreq[i] = termsAndFreq.get(i);
-            mostTopTenFreq[i] = termsAndFreq.get(termsAndFreq.size() - (i + 1));
-        }
-        System.out.println("");
-
-        System.out.println("The top ten terms with most frequencies are:");
-        for (int i = 0; i<10; i++){
-            System.out.println(mostTopTenFreq[i].replaceAll("#",""));
-        }
-        System.out.println("");
-        System.out.println("The top ten terms with least frequencies are:");
-        for (int i = 0; i<10; i++){
-            System.out.println(leastTopTenFreq[i].replaceAll("#",""));
-        }
-    }
-
+    /**
+     * Comparators
+     */
     public class FreqComparator implements Comparator {
         @Override
         public int compare(Object o1, Object o2) {
